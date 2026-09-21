@@ -1,0 +1,16 @@
+{
+  "name": "com.maxy.maxymcp",
+  "version": "0.6.9",
+  "displayName": "MaxyMCP（中文本地版）",
+  "description": "面向 Unity 编辑器的 MCP 服务器中文本地版本，界面与编辑器提示固定使用正式中文；工具协议与 AI 技能数据保持英文，支持代码执行、提示与资源、输入模拟、截图和运行模式自动化。",
+  "license": "MIT",
+  "unity": "2022.3",
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "3.2.1",
+    "com.unity.inputsystem": "1.7.0"
+  },
+  "keywords": ["mcp", "ai", "llm", "editor", "tools", "model-context-protocol"],
+  "author": {
+    "name": "Maxy"
+  }
+}

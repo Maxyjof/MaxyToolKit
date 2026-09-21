@@ -1,0 +1,915 @@
+// Copyright (C) MaxyMCP. Licensed under MIT.
+//
+// Standalone keepalive broker for MaxyMCP Unity MCP.
+// Compiled on demand with the Unity-bundled Mono C# compiler and run outside
+// Unity's reloadable AppDomain. The broker owns the client-facing HTTP port.
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading;
+
+namespace MaxyMCP.UnityMcp.Broker
+{
+    internal static class Program
+    {
+        // Bumped 2 -> 3 for the stale-session sweep below (no client-facing wire change). A
+        // pre-v3 broker left running after a package upgrade fails the new health probe and is
+        // replaced with a freshly compiled one. Keep in sync with MCPBrokerProtocol.Version.
+        private const int ProtocolVersion = 3;
+        private const int PullTimeoutMs = 25000;
+        private const long HoldDeadlineMs = 300000;
+        private const int MaxHeaderBytes = 64 * 1024;
+        private const int MaxBodyBytes = 32 * 1024 * 1024;
+        private const int BackendUnavailableCode = -32001;
+        private const string BackendUnavailableMessage =
+            "Unity MCP backend is reloading or reconnecting. Retry shortly.";
+        private const string TokenHeader = "X-MaxyMCP-Broker-Token";
+        private const string SessionHeader = "X-MaxyMCP-Broker-Session";
+        private const string ReqIdHeader = "X-MaxyMCP-Broker-ReqId";
+        private const string RedeliveryHeader = "X-MaxyMCP-Broker-Redelivery";
+        private const string BrokerHeader = "X-MaxyMCP-Broker";
+        private const string AcceptSseHeader = "X-MaxyMCP-Broker-Accept-SSE";
+        private const string ContentTypeHeader = "X-MaxyMCP-Broker-Content-Type";
+        private const string AttachPath = "/_maxymcp/broker/attach";
+        private const string DetachPath = "/_maxymcp/broker/detach";
+
+        private static readonly object Gate = new object();
+        private static readonly Dictionary<long, PendingRequest> Pending = new Dictionary<long, PendingRequest>();
+        private static readonly List<long> Queue = new List<long>();
+        // session -> last-seen epoch ms (attach and pull act as the heartbeat). Stale entries are
+        // swept in SweepLoop so a crashed editor -- which never sends detach -- cannot linger
+        // forever and defeat the fast-fail gate in HandleClientRequest.
+        private static readonly Dictionary<string, long> AttachedSessions = new Dictionary<string, long>();
+        private static Waiter WaitingPull;
+        private static TcpListener Listener;
+        private static string Token;
+        private static long Sequence;
+        private static bool Stopping;
+
+        // A session that has not pulled within this window is treated as dead and swept.
+        // Defaults to HoldDeadlineMs: we already hold a client request up to that long waiting
+        // for a session to (re)appear, so a session silent longer than that is definitely gone.
+        // Must stay >= the longest domain-reload/compile gap, otherwise a reloading editor's
+        // session would be swept mid-reload and requests would fail instead of waiting for it.
+        // Overridable via FUNPLAY_BROKER_SESSION_STALE_MS (used by tests to shorten the window).
+        private static long SessionStaleMs = HoldDeadlineMs;
+
+        private sealed class PendingRequest
+        {
+            public TcpClient Client;
+            public NetworkStream Stream;
+            public string Body;
+            public long EnqueuedAt;
+            public string ActiveSession;
+            public bool Redelivered;
+            public bool AcceptsSse;
+        }
+
+        private sealed class Waiter
+        {
+            public TcpClient Client;
+            public NetworkStream Stream;
+            public string Session;
+            public long StashedAt;
+        }
+
+        public static int Main(string[] args)
+        {
+            var port = 8765;
+            Token = string.Empty;
+
+            for (var i = 0; i < args.Length; i++)
+            {
+                if (args[i] == "--port" && i + 1 < args.Length)
+                {
+                    int.TryParse(args[++i], out port);
+                    continue;
+                }
+
+                if (args[i] == "--token" && i + 1 < args.Length)
+                {
+                    Token = args[++i] ?? string.Empty;
+                    continue;
+                }
+            }
+
+            if (port <= 0)
+                port = 8765;
+
+            var staleEnv = Environment.GetEnvironmentVariable("FUNPLAY_BROKER_SESSION_STALE_MS");
+            long parsedStale;
+            if (!string.IsNullOrEmpty(staleEnv) && long.TryParse(staleEnv, out parsedStale) && parsedStale > 0)
+                SessionStaleMs = parsedStale;
+
+            if (string.IsNullOrEmpty(Token))
+            {
+                Log("fatal: missing broker token");
+                return 2;
+            }
+
+            try
+            {
+                Listener = new TcpListener(IPAddress.Loopback, port);
+                Listener.Server.NoDelay = true;
+                Listener.Start();
+            }
+            catch (Exception ex)
+            {
+                Log("fatal: cannot bind port " + port + ": " + ex.Message);
+                return 1;
+            }
+
+            Log("listening on http://127.0.0.1:" + port + "/");
+
+            var sweeper = new Thread(SweepLoop);
+            sweeper.IsBackground = true;
+            sweeper.Start();
+
+            while (!Stopping)
+            {
+                TcpClient client = null;
+                try
+                {
+                    client = Listener.AcceptTcpClient();
+                }
+                catch
+                {
+                    if (!Stopping)
+                        Thread.Sleep(50);
+                    continue;
+                }
+
+                var thread = new Thread(HandleConnectionThread);
+                thread.IsBackground = true;
+                thread.Start(client);
+            }
+
+            return 0;
+        }
+
+        private static void HandleConnectionThread(object state)
+        {
+            var client = (TcpClient)state;
+            try
+            {
+                HandleConnection(client);
+            }
+            catch (Exception ex)
+            {
+                Log("handler error: " + ex.Message);
+                SafeClose(client);
+            }
+        }
+
+        private static void HandleConnection(TcpClient client)
+        {
+            client.NoDelay = true;
+            var stream = client.GetStream();
+
+            string method;
+            string path;
+            string body;
+            Dictionary<string, string> headers;
+            if (!ReadHttpRequest(stream, out method, out path, out headers, out body))
+            {
+                SafeClose(client);
+                return;
+            }
+
+            if (method == "GET" && path.StartsWith("/_maxymcp/broker/health", StringComparison.Ordinal))
+            {
+                if (!HasValidToken(headers))
+                {
+                    WriteResponse(stream, 403, "Forbidden", "application/json", BrokerHeaderLine(), "{\"ok\":false}");
+                    SafeClose(client);
+                    return;
+                }
+
+                var response = "{\"ok\":true,\"name\":\"maxymcp-unity-mcp-broker\",\"protocol\":" +
+                               ProtocolVersion + ",\"pid\":" + Process.GetCurrentProcess().Id +
+                               ",\"pending\":" + GetPendingCount() + "}";
+                WriteResponse(stream, 200, "OK", "application/json", BrokerHeaderLine(), response);
+                SafeClose(client);
+                return;
+            }
+
+            if (method == "POST" && path.StartsWith("/_maxymcp/broker/shutdown", StringComparison.Ordinal))
+            {
+                if (!HasValidToken(headers))
+                {
+                    WriteResponse(stream, 403, "Forbidden", "application/json", BrokerHeaderLine(), "{\"ok\":false}");
+                    SafeClose(client);
+                    return;
+                }
+
+                WriteResponse(stream, 200, "OK", "application/json", BrokerHeaderLine(), "{\"ok\":true}");
+                SafeClose(client);
+                BeginShutdown();
+                return;
+            }
+
+            if (method == "GET" && path.StartsWith("/_maxymcp/broker/pull", StringComparison.Ordinal))
+            {
+                if (!HasValidToken(headers))
+                {
+                    WriteResponse(stream, 403, "Forbidden", "application/json", BrokerHeaderLine(), "{\"ok\":false}");
+                    SafeClose(client);
+                    return;
+                }
+
+                string session;
+                headers.TryGetValue(SessionHeader.ToLowerInvariant(), out session);
+                if (string.IsNullOrEmpty(session))
+                    session = "unknown";
+                HandlePull(client, stream, session);
+                return;
+            }
+
+            if (method == "POST" && path.StartsWith("/_maxymcp/broker/push", StringComparison.Ordinal))
+            {
+                if (!HasValidToken(headers))
+                {
+                    WriteResponse(stream, 403, "Forbidden", "application/json", BrokerHeaderLine(), "{\"ok\":false}");
+                    SafeClose(client);
+                    return;
+                }
+
+                long reqId = 0;
+                string reqIdText;
+                if (headers.TryGetValue(ReqIdHeader.ToLowerInvariant(), out reqIdText))
+                    long.TryParse(reqIdText, out reqId);
+
+                string session;
+                headers.TryGetValue(SessionHeader.ToLowerInvariant(), out session);
+                string pushContentType;
+                headers.TryGetValue(ContentTypeHeader.ToLowerInvariant(), out pushContentType);
+                var accepted = HandlePush(reqId, session, body, pushContentType);
+                WriteResponse(stream, accepted ? 200 : 409, accepted ? "OK" : "Conflict", "application/json",
+                    BrokerHeaderLine(), accepted ? "{\"ok\":true}" : "{\"ok\":false}");
+                SafeClose(client);
+                return;
+            }
+
+            if (method == "POST" && path.StartsWith(AttachPath, StringComparison.Ordinal))
+            {
+                if (!HasValidToken(headers))
+                {
+                    WriteResponse(stream, 403, "Forbidden", "application/json", BrokerHeaderLine(), "{\"ok\":false}");
+                    SafeClose(client);
+                    return;
+                }
+
+                string session;
+                headers.TryGetValue(SessionHeader.ToLowerInvariant(), out session);
+                HandleAttach(session);
+                WriteResponse(stream, 200, "OK", "application/json", BrokerHeaderLine(), "{\"ok\":true}");
+                SafeClose(client);
+                return;
+            }
+
+            if (method == "POST" && path.StartsWith(DetachPath, StringComparison.Ordinal))
+            {
+                if (!HasValidToken(headers))
+                {
+                    WriteResponse(stream, 403, "Forbidden", "application/json", BrokerHeaderLine(), "{\"ok\":false}");
+                    SafeClose(client);
+                    return;
+                }
+
+                string session;
+                headers.TryGetValue(SessionHeader.ToLowerInvariant(), out session);
+                HandleDetach(session);
+                WriteResponse(stream, 200, "OK", "application/json", BrokerHeaderLine(), "{\"ok\":true}");
+                SafeClose(client);
+                return;
+            }
+
+            if (method == "OPTIONS")
+            {
+                WriteResponse(stream, 204, "No Content", "text/plain",
+                    "Access-Control-Allow-Methods: POST, OPTIONS\r\nAccess-Control-Allow-Headers: Content-Type\r\n", "");
+                SafeClose(client);
+                return;
+            }
+
+            if (method != "POST")
+            {
+                WriteResponse(stream, 405, "Method Not Allowed", "text/plain", "Allow: POST, OPTIONS\r\n", "");
+                SafeClose(client);
+                return;
+            }
+
+            string acceptHeader;
+            headers.TryGetValue("accept", out acceptHeader);
+            var acceptsSse = !string.IsNullOrEmpty(acceptHeader) &&
+                             acceptHeader.IndexOf("text/event-stream", StringComparison.OrdinalIgnoreCase) >= 0;
+            HandleClientRequest(client, stream, body, acceptsSse);
+        }
+
+        private static void HandlePull(TcpClient client, NetworkStream stream, string session)
+        {
+            lock (Gate)
+            {
+                AttachedSessions[session] = NowMs();
+
+                if (WaitingPull != null)
+                {
+                    TryWriteNoContent(WaitingPull.Stream);
+                    SafeClose(WaitingPull.Client);
+                    WaitingPull = null;
+                }
+
+                RequeueRequestsOwnedByDeadSession(session);
+                WaitingPull = new Waiter { Client = client, Stream = stream, Session = session, StashedAt = NowMs() };
+                TryDispatch();
+            }
+        }
+
+        private static bool HandlePush(long reqId, string session, string body, string contentType)
+        {
+            lock (Gate)
+            {
+                PendingRequest pending;
+                if (reqId == 0 || !Pending.TryGetValue(reqId, out pending))
+                    return false;
+
+                if (!string.Equals(pending.ActiveSession, session ?? string.Empty, StringComparison.Ordinal))
+                    return false;
+
+                Pending.Remove(reqId);
+                Queue.Remove(reqId);
+                try
+                {
+                    var responseContentType = string.IsNullOrEmpty(contentType)
+                        ? "application/json; charset=utf-8"
+                        : contentType;
+                    WriteResponse(pending.Stream, 200, "OK", responseContentType, null, body ?? string.Empty);
+                }
+                catch (Exception ex)
+                {
+                    Log("#" + reqId + " client disconnected before response: " + ex.Message);
+                }
+                SafeClose(pending.Client);
+                return true;
+            }
+        }
+
+        private static void HandleAttach(string session)
+        {
+            if (string.IsNullOrEmpty(session))
+                return;
+
+            lock (Gate)
+                AttachedSessions[session] = NowMs();
+        }
+
+        private static void HandleDetach(string session)
+        {
+            if (string.IsNullOrEmpty(session))
+                return;
+
+            lock (Gate)
+                RemoveSessionLocked(session);
+        }
+
+        // Removes a session and reconciles its in-flight work. Caller must hold Gate.
+        // Used by both explicit detach and the staleness sweep in SweepLoop.
+        private static void RemoveSessionLocked(string session)
+        {
+            AttachedSessions.Remove(session);
+
+            if (WaitingPull != null && string.Equals(WaitingPull.Session, session, StringComparison.Ordinal))
+            {
+                TryWriteNoContent(WaitingPull.Stream);
+                SafeClose(WaitingPull.Client);
+                WaitingPull = null;
+            }
+
+            foreach (var item in Pending)
+            {
+                var pending = item.Value;
+                if (!string.Equals(pending.ActiveSession, session, StringComparison.Ordinal))
+                    continue;
+
+                pending.ActiveSession = null;
+                pending.Redelivered = true;
+                if (!Queue.Contains(item.Key))
+                    Queue.Insert(0, item.Key);
+            }
+
+            // Fail still-queued (never-dispatched) requests only when no backend remains to
+            // serve them. When another session is still attached -- e.g. a dead session swept
+            // while a healthy one is connected -- leave them queued for that session to pull.
+            if (AttachedSessions.Count == 0)
+            {
+                var unavailable = new List<long>();
+                foreach (var item in Pending)
+                {
+                    if (string.IsNullOrEmpty(item.Value.ActiveSession) &&
+                        !item.Value.Redelivered &&
+                        Queue.Contains(item.Key))
+                        unavailable.Add(item.Key);
+                }
+
+                foreach (var reqId in unavailable)
+                {
+                    PendingRequest pending;
+                    if (!Pending.TryGetValue(reqId, out pending))
+                        continue;
+
+                    Pending.Remove(reqId);
+                    Queue.Remove(reqId);
+                    try
+                    {
+                        WriteBackendUnavailableResponse(pending.Stream, pending.Body);
+                    }
+                    catch
+                    {
+                    }
+                    SafeClose(pending.Client);
+                }
+            }
+        }
+
+        private static void HandleClientRequest(TcpClient client, NetworkStream stream, string body, bool acceptsSse)
+        {
+            lock (Gate)
+            {
+                if (WaitingPull == null && !HasActiveRequestLocked() && AttachedSessions.Count == 0)
+                {
+                    WriteBackendUnavailableResponse(stream, body);
+                    SafeClose(client);
+                    return;
+                }
+
+                var reqId = ++Sequence;
+                Pending[reqId] = new PendingRequest
+                {
+                    Client = client,
+                    Stream = stream,
+                    Body = body ?? string.Empty,
+                    EnqueuedAt = NowMs(),
+                    AcceptsSse = acceptsSse
+                };
+                Queue.Add(reqId);
+                TryDispatch();
+            }
+        }
+
+        private static bool HasActiveRequestLocked()
+        {
+            foreach (var item in Pending)
+            {
+                if (!string.IsNullOrEmpty(item.Value.ActiveSession))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static void RequeueRequestsOwnedByDeadSession(string session)
+        {
+            foreach (var item in Pending)
+            {
+                var pending = item.Value;
+                if (string.IsNullOrEmpty(pending.ActiveSession))
+                    continue;
+
+                if (string.Equals(pending.ActiveSession, session, StringComparison.Ordinal))
+                    continue;
+
+                if (!Queue.Contains(item.Key))
+                {
+                    pending.ActiveSession = null;
+                    pending.Redelivered = true;
+                    Queue.Insert(0, item.Key);
+                    Log("#" + item.Key + " requeued for new Unity session");
+                }
+            }
+        }
+
+        private static void TryDispatch()
+        {
+            if (WaitingPull == null || Queue.Count == 0)
+                return;
+
+            var waiter = WaitingPull;
+            WaitingPull = null;
+
+            while (Queue.Count > 0)
+            {
+                var reqId = Queue[0];
+                Queue.RemoveAt(0);
+
+                PendingRequest pending;
+                if (!Pending.TryGetValue(reqId, out pending))
+                    continue;
+
+                if (!string.IsNullOrEmpty(pending.ActiveSession))
+                    continue;
+
+                var headers = BrokerHeaderLine() +
+                              ReqIdHeader + ": " + reqId + "\r\n" +
+                              RedeliveryHeader + ": " + (pending.Redelivered ? "1" : "0") + "\r\n" +
+                              AcceptSseHeader + ": " + (pending.AcceptsSse ? "1" : "0") + "\r\n";
+                try
+                {
+                    WriteResponse(waiter.Stream, 200, "OK", "application/json; charset=utf-8", headers, pending.Body);
+                    pending.ActiveSession = waiter.Session;
+                }
+                catch (Exception ex)
+                {
+                    Log("dispatch failed for #" + reqId + ": " + ex.Message);
+                    pending.ActiveSession = null;
+                    Pending.Remove(reqId);
+                    try
+                    {
+                        WriteBackendUnavailableResponse(pending.Stream, pending.Body);
+                    }
+                    catch
+                    {
+                    }
+                    SafeClose(pending.Client);
+                }
+                finally
+                {
+                    SafeClose(waiter.Client);
+                }
+                return;
+            }
+
+            WaitingPull = waiter;
+        }
+
+        private static void SweepLoop()
+        {
+            while (!Stopping)
+            {
+                Thread.Sleep(1000);
+                lock (Gate)
+                {
+                    var now = NowMs();
+                    if (WaitingPull != null && now - WaitingPull.StashedAt > PullTimeoutMs)
+                    {
+                        TryWriteNoContent(WaitingPull.Stream);
+                        SafeClose(WaitingPull.Client);
+                        WaitingPull = null;
+                    }
+
+                    var expired = new List<long>();
+                    foreach (var item in Pending)
+                    {
+                        if (now - item.Value.EnqueuedAt > HoldDeadlineMs)
+                            expired.Add(item.Key);
+                    }
+
+                    foreach (var reqId in expired)
+                    {
+                        var pending = Pending[reqId];
+                        Pending.Remove(reqId);
+                        Queue.Remove(reqId);
+                        try
+                        {
+                            WriteResponse(pending.Stream, 504, "Gateway Timeout", "application/json",
+                                null, "{\"error\":\"broker_hold_deadline_exceeded\"}");
+                        }
+                        catch
+                        {
+                        }
+                        SafeClose(pending.Client);
+                    }
+
+                    var staleSessions = new List<string>();
+                    foreach (var item in AttachedSessions)
+                    {
+                        // The session whose pull is currently parked is provably alive even if
+                        // its last-seen is old (a parked long-poll does not refresh the timestamp).
+                        if (WaitingPull != null && string.Equals(item.Key, WaitingPull.Session, StringComparison.Ordinal))
+                            continue;
+                        if (now - item.Value > SessionStaleMs)
+                            staleSessions.Add(item.Key);
+                    }
+
+                    foreach (var session in staleSessions)
+                    {
+                        Log("session " + session + " swept after " + SessionStaleMs + "ms without activity");
+                        RemoveSessionLocked(session);
+                    }
+                }
+            }
+        }
+
+        private static bool ReadHttpRequest(NetworkStream stream, out string method, out string path,
+            out Dictionary<string, string> headers, out string body)
+        {
+            method = null;
+            path = null;
+            body = null;
+            headers = new Dictionary<string, string>();
+
+            var raw = new MemoryStream();
+            var buffer = new byte[8192];
+            var headerEnd = -1;
+            while (headerEnd < 0)
+            {
+                int read;
+                try { read = stream.Read(buffer, 0, buffer.Length); }
+                catch { return false; }
+                if (read == 0)
+                    return false;
+
+                raw.Write(buffer, 0, read);
+                if (raw.Length > MaxHeaderBytes)
+                    return false;
+
+                headerEnd = FindHeaderEnd(raw.GetBuffer(), (int)raw.Length);
+            }
+
+            var bytes = raw.ToArray();
+            var headerText = Encoding.ASCII.GetString(bytes, 0, headerEnd);
+            var lines = headerText.Split(new[] { "\r\n" }, StringSplitOptions.None);
+            if (lines.Length == 0)
+                return false;
+
+            var requestLine = lines[0].Split(' ');
+            if (requestLine.Length < 2)
+                return false;
+
+            method = requestLine[0].ToUpperInvariant();
+            path = requestLine[1];
+
+            var contentLength = 0;
+            for (var i = 1; i < lines.Length; i++)
+            {
+                var separator = lines[i].IndexOf(':');
+                if (separator <= 0)
+                    continue;
+
+                var name = lines[i].Substring(0, separator).Trim().ToLowerInvariant();
+                var value = lines[i].Substring(separator + 1).Trim();
+                headers[name] = value;
+                if (name == "content-length")
+                    int.TryParse(value, out contentLength);
+            }
+
+            if (contentLength < 0 || contentLength > MaxBodyBytes)
+                return false;
+
+            var bodyStart = headerEnd + 4;
+            var bodyBytes = new byte[contentLength];
+            var copied = Math.Min(contentLength, bytes.Length - bodyStart);
+            if (copied > 0)
+                Buffer.BlockCopy(bytes, bodyStart, bodyBytes, 0, copied);
+
+            while (copied < contentLength)
+            {
+                int read;
+                try { read = stream.Read(bodyBytes, copied, contentLength - copied); }
+                catch { break; }
+                if (read == 0)
+                    break;
+                copied += read;
+            }
+
+            body = Encoding.UTF8.GetString(bodyBytes, 0, copied);
+            return true;
+        }
+
+        private static int FindHeaderEnd(byte[] buffer, int length)
+        {
+            for (var i = 3; i < length; i++)
+            {
+                if (buffer[i - 3] == '\r' && buffer[i - 2] == '\n' && buffer[i - 1] == '\r' && buffer[i] == '\n')
+                    return i - 3;
+            }
+
+            return -1;
+        }
+
+        private static void WriteResponse(NetworkStream stream, int status, string reason, string contentType,
+            string extraHeaders, string body)
+        {
+            var bodyBytes = Encoding.UTF8.GetBytes(body ?? string.Empty);
+            var header = "HTTP/1.1 " + status + " " + reason + "\r\n" +
+                         "Content-Type: " + contentType + "\r\n" +
+                         "Content-Length: " + bodyBytes.Length + "\r\n" +
+                         "Connection: close\r\n" +
+                         "Access-Control-Allow-Origin: *\r\n" +
+                         (extraHeaders ?? string.Empty) +
+                         "\r\n";
+            var headerBytes = Encoding.ASCII.GetBytes(header);
+            stream.Write(headerBytes, 0, headerBytes.Length);
+            if (bodyBytes.Length > 0)
+                stream.Write(bodyBytes, 0, bodyBytes.Length);
+            stream.Flush();
+        }
+
+        private static void WriteBackendUnavailableResponse(NetworkStream stream, string requestBody)
+        {
+            var idLiteral = ExtractJsonRpcIdLiteral(requestBody);
+            var body = "{\"jsonrpc\":\"2.0\",\"id\":" + idLiteral +
+                       ",\"error\":{\"code\":" + BackendUnavailableCode +
+                       ",\"message\":\"" + EscapeJson(BackendUnavailableMessage) +
+                       "\",\"data\":{\"retryable\":true,\"reason\":\"unity_backend_reloading\"}}}";
+            WriteResponse(stream, 200, "OK", "application/json; charset=utf-8", BrokerHeaderLine(), body);
+        }
+
+        private static string ExtractJsonRpcIdLiteral(string json)
+        {
+            if (string.IsNullOrEmpty(json))
+                return "null";
+
+            var inString = false;
+            var escaped = false;
+            var depth = 0;
+            for (var i = 0; i < json.Length; i++)
+            {
+                var ch = json[i];
+                if (inString)
+                {
+                    if (escaped)
+                    {
+                        escaped = false;
+                        continue;
+                    }
+
+                    if (ch == '\\')
+                    {
+                        escaped = true;
+                        continue;
+                    }
+
+                    if (ch == '"')
+                        inString = false;
+                    continue;
+                }
+
+                if (ch == '"')
+                {
+                    if (depth == 1 && IsPropertyNameAt(json, i, "id", out var valueStart))
+                        return ReadJsonValueLiteral(json, valueStart);
+
+                    inString = true;
+                    continue;
+                }
+
+                if (ch == '{' || ch == '[')
+                    depth++;
+                else if (ch == '}' || ch == ']')
+                    depth--;
+            }
+
+            return "null";
+        }
+
+        private static bool IsPropertyNameAt(string json, int quoteIndex, string propertyName, out int valueStart)
+        {
+            valueStart = -1;
+            var endQuote = quoteIndex + propertyName.Length + 1;
+            if (endQuote >= json.Length || json[endQuote] != '"')
+                return false;
+
+            for (var i = 0; i < propertyName.Length; i++)
+            {
+                if (json[quoteIndex + 1 + i] != propertyName[i])
+                    return false;
+            }
+
+            var cursor = endQuote + 1;
+            while (cursor < json.Length && char.IsWhiteSpace(json[cursor]))
+                cursor++;
+
+            if (cursor >= json.Length || json[cursor] != ':')
+                return false;
+
+            cursor++;
+            while (cursor < json.Length && char.IsWhiteSpace(json[cursor]))
+                cursor++;
+
+            if (cursor >= json.Length)
+                return false;
+
+            valueStart = cursor;
+            return true;
+        }
+
+        private static string ReadJsonValueLiteral(string json, int start)
+        {
+            if (start < 0 || start >= json.Length)
+                return "null";
+
+            if (json[start] == '"')
+            {
+                var escaped = false;
+                for (var i = start + 1; i < json.Length; i++)
+                {
+                    if (escaped)
+                    {
+                        escaped = false;
+                        continue;
+                    }
+
+                    if (json[i] == '\\')
+                    {
+                        escaped = true;
+                        continue;
+                    }
+
+                    if (json[i] == '"')
+                        return json.Substring(start, i - start + 1);
+                }
+
+                return "null";
+            }
+
+            var end = start;
+            while (end < json.Length && json[end] != ',' && json[end] != '}' && json[end] != ']')
+                end++;
+
+            var literal = json.Substring(start, end - start).Trim();
+            if (literal == "null" || literal == "true" || literal == "false")
+                return literal;
+
+            double number;
+            return double.TryParse(literal, out number) ? literal : "null";
+        }
+
+        private static string EscapeJson(string value)
+        {
+            return (value ?? string.Empty)
+                .Replace("\\", "\\\\")
+                .Replace("\"", "\\\"")
+                .Replace("\r", "\\r")
+                .Replace("\n", "\\n");
+        }
+
+        private static bool HasValidToken(Dictionary<string, string> headers)
+        {
+            string value;
+            return headers.TryGetValue(TokenHeader.ToLowerInvariant(), out value) &&
+                   string.Equals(value, Token, StringComparison.Ordinal);
+        }
+
+        private static string BrokerHeaderLine()
+        {
+            return BrokerHeader + ": " + ProtocolVersion + "\r\n";
+        }
+
+        private static int GetPendingCount()
+        {
+            lock (Gate)
+                return Pending.Count;
+        }
+
+        private static long NowMs()
+        {
+            return (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
+        }
+
+        private static void TryWriteNoContent(NetworkStream stream)
+        {
+            try { WriteResponse(stream, 204, "No Content", "text/plain", BrokerHeaderLine(), string.Empty); }
+            catch { }
+        }
+
+        private static void SafeClose(TcpClient client)
+        {
+            try
+            {
+                if (client != null)
+                    client.Close();
+            }
+            catch
+            {
+            }
+        }
+
+        private static void BeginShutdown()
+        {
+            Stopping = true;
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                Thread.Sleep(50);
+                try
+                {
+                    if (Listener != null)
+                        Listener.Stop();
+                }
+                catch
+                {
+                }
+                Environment.Exit(0);
+            });
+        }
+
+        private static void Log(string message)
+        {
+            Console.Error.WriteLine("[maxymcp-broker " + DateTime.Now.ToString("HH:mm:ss.fff") + "] " + message);
+        }
+    }
+}

@@ -1,0 +1,153 @@
+// 版权归 MaxyMCP 所有，遵循 MIT 许可证。
+
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using UnityEngine;
+using MaxyMCP.Editor.Api;
+using MaxyMCP.Editor.Api.Models;
+using MaxyMCP.Editor.Settings;
+using MaxyMCP.Editor.Tools.Helpers;
+
+namespace MaxyMCP.Editor.MCP.Client
+{
+    /// <summary>
+    /// Manages the lifecycle of an external MCP server connection:
+    /// start/stop process, discover tools, route tool calls, extract results.
+    /// </summary>
+    internal class MCPToolService : IDisposable
+    {
+        private readonly ISettingsController _settings;
+        private MCPHost _host;
+        private readonly HashSet<string> _mcpToolNames = new HashSet<string>();
+        private List<ToolDefinition> _toolDefinitions = new List<ToolDefinition>();
+        private bool _isRunning;
+
+        public bool IsRunning => _isRunning;
+        public List<ToolDefinition> ToolDefinitions => _toolDefinitions;
+
+        public MCPToolService(ISettingsController settings)
+        {
+            _settings = settings;
+        }
+
+        /// <summary>
+        /// Start an MCP server process, initialize protocol, and discover tools.
+        /// </summary>
+        public async Task<bool> StartAsync(
+            string command, string arguments = "",
+            Dictionary<string, string> envVars = null,
+            CancellationToken ct = default)
+        {
+            if (_isRunning) await StopAsync();
+
+            try
+            {
+                _host = new MCPHost(command, arguments, envVars);
+
+                var connected = await _host.ConnectAsync(ct);
+                if (!connected)
+                {
+                    Debug.LogWarning("[MaxyMCP] Failed to connect to MCP server.");
+                    return false;
+                }
+
+                var toolsJson = await _host.ListToolsAsync(ct);
+                if (string.IsNullOrEmpty(toolsJson))
+                {
+                    Debug.LogWarning("[MaxyMCP] MCP server returned no tools.");
+                    return false;
+                }
+
+                _toolDefinitions = MCPJsonHelper.ParseToolsList(toolsJson);
+                _mcpToolNames.Clear();
+                foreach (var td in _toolDefinitions)
+                    _mcpToolNames.Add(td.function.name);
+
+                _isRunning = true;
+                PluginDebugLogger.Log($"[MaxyMCP] MCP started. Discovered {_toolDefinitions.Count} tools.");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[MaxyMCP] MCP start failed: {ex.Message}");
+                _toolDefinitions.Clear();
+                _mcpToolNames.Clear();
+                return false;
+            }
+        }
+
+        public async Task StopAsync()
+        {
+            _isRunning = false;
+            _toolDefinitions.Clear();
+            _mcpToolNames.Clear();
+
+            if (_host != null)
+            {
+                _host.Dispose();
+                _host = null;
+            }
+
+            await Task.CompletedTask;
+        }
+
+        public bool IsMCPTool(string toolName)
+        {
+            return _mcpToolNames.Contains(toolName);
+        }
+
+        public async Task<string> CallToolAsync(string toolName, string rawArguments,
+            CancellationToken ct = default)
+        {
+            if (!_isRunning || _host == null || !_host.IsConnected)
+                return ToolResultFormatter.Error("MCP_SERVER_NOT_RUNNING");
+
+            try
+            {
+                var arguments = ParseArgumentsToDict(rawArguments);
+                var responseJson = await _host.CallToolAsync(toolName, arguments, ct);
+                if (string.IsNullOrEmpty(responseJson))
+                    return ToolResultFormatter.Error("MCP_EMPTY_RESPONSE", new { tool = toolName });
+
+                return MCPJsonHelper.ExtractCallResult(responseJson) ?? "No result from MCP tool.";
+            }
+            catch (Exception ex)
+            {
+                return ToolResultFormatter.Error("MCP_CALL_FAILED", new { tool = toolName, message = ex.Message });
+            }
+        }
+
+        private Dictionary<string, object> ParseArgumentsToDict(string rawJson)
+        {
+            var dict = new Dictionary<string, object>();
+            if (string.IsNullOrWhiteSpace(rawJson)) return dict;
+
+            try
+            {
+                var parsed = JsonParse.ParseJsonObject(rawJson, 0, out _);
+                if (parsed != null)
+                {
+                    foreach (var kvp in parsed)
+                        dict[kvp.Key] = kvp.Value;
+                }
+            }
+            catch
+            {
+                dict["_raw"] = rawJson;
+            }
+
+            return dict;
+        }
+
+        public void Dispose()
+        {
+            _host?.Dispose();
+            _host = null;
+            _isRunning = false;
+            _toolDefinitions.Clear();
+            _mcpToolNames.Clear();
+        }
+    }
+}
