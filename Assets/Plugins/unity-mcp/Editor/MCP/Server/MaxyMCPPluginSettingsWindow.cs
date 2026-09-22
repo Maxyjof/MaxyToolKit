@@ -90,7 +90,7 @@ namespace MaxyMCP.Editor.MCP.Server
 
             var activitySection = CreateSection();
             activitySection.style.marginBottom = 8;
-            activitySection.Add(CreateSectionHeader("Recent Activity"));
+            activitySection.Add(CreateSectionHeader(MaxyMCPLocalization.T("Recent Activity")));
             _recentActivityExpandedToggle = new Toggle(MaxyMCPLocalization.T("Expand all entries by default"))
             {
                 name = "recent-activity-expanded-by-default"
@@ -103,8 +103,7 @@ namespace MaxyMCP.Editor.MCP.Server
                 _settingsController.MCPRecentActivityExpandedByDefault = evt.newValue);
             activitySection.Add(_recentActivityExpandedToggle);
             activitySection.Add(CreateHint(
-                "On: expand all entries. Off: collapse history and expand only the latest entry. " +
-                "Applies immediately; manually expanded or collapsed entries keep your choice until the panel is reopened."));
+                MaxyMCPLocalization.T("On: expand all entries. Off: collapse history and expand only the latest entry. Applies immediately; manually expanded or collapsed entries keep your choice until the panel is reopened.")));
             content.Add(activitySection);
 
             var debugSection = CreateSection();
@@ -141,8 +140,8 @@ namespace MaxyMCP.Editor.MCP.Server
             if (_debugStatusLabel != null)
             {
                 _debugStatusLabel.text = enabled
-                    ? "Debug logging is enabled. Plugin lifecycle, MCP request, transport, and tool execution traces are written to the Unity Console."
-                    : "Debug logging is disabled. Warnings and errors are still written to the Unity Console.";
+                    ? MaxyMCPLocalization.T("Debug logging is enabled. Plugin lifecycle, MCP request, transport, and tool execution traces are written to the Unity Console.")
+                    : MaxyMCPLocalization.T("Debug logging is disabled. Warnings and errors are still written to the Unity Console.");
                 _debugStatusLabel.style.color = enabled
                     ? new Color(0.55f, 0.85f, 0.55f)
                     : new Color(0.65f, 0.65f, 0.65f);

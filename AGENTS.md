@@ -26,6 +26,7 @@ This section is managed by MaxyMCP MCP for Unity. Everything between the begin a
 - Save only the scene or prefab assets intentionally modified, then read back exact values.
 - Prefer structured query/audit/edit tools in Core; low-frequency configuration and preview management remain in Full. Use `get_tool_capabilities` to check exposure; respect customized allowlists.
 - `execute_code` refreshes by default; use skip_refresh only after verifying the intended assemblies are ready.
+- After any external edit to C# source files, do not wait for the Unity window to refresh by itself: if Unity is in Play Mode, call `exit_play_mode` first, then call `request_recompile`, `wait_for_compilation`, and `get_compilation_errors` before relying on the changed code.
 - In `execute_code`, null-guard every lookup and return explicit missing path/object/component messages; do not run self-healing fallback loops.
 - For Unity object references, do not use `??=` for lazy rebinding; use explicit `if (field == null) field = Resolve();`.
 - After edits use `prepare_editor` with the intended mode and a unique request_key; use the returned task_id with `get_task`, wait_seconds and after_revision until operation.status=ready and current_editor confirms readiness and mode, then check console errors. Honor poll_after_ms on unchanged results.

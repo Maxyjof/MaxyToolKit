@@ -29,7 +29,7 @@ namespace MaxyMCP.Editor.MCP.Server
             safetyToggle.style.marginBottom = 2;
             parent.Add(safetyToggle);
             AddHint(parent,
-                "Default for execute_code calls when safety_checks is omitted. Explicit safety_checks=false can still bypass this for trusted local calls.");
+                MaxyMCPLocalization.T("Default for execute_code calls when safety_checks is omitted. Explicit safety_checks=false can still bypass this for trusted local calls."));
 
             var strictToggle = new Toggle(MaxyMCPLocalization.T("Strict filesystem guard"));
             strictToggle.SetValueWithoutNotify(settings.ExecuteCodeStrictFilesystemSafetyEnabled);
@@ -40,7 +40,7 @@ namespace MaxyMCP.Editor.MCP.Server
             strictToggle.style.marginBottom = 2;
             parent.Add(strictToggle);
             AddHint(parent,
-                "Adds checks for broad System.IO file writes, raw file streams, and absolute/user/system/traversal paths. This is a defensive guard, not a complete sandbox.");
+                MaxyMCPLocalization.T("Adds checks for broad System.IO file writes, raw file streams, and absolute/user/system/traversal paths. This is a defensive guard, not a complete sandbox."));
 
             var projectNamespacesToggle = new Toggle(MaxyMCPLocalization.T("Auto-inject project namespaces"));
             projectNamespacesToggle.SetValueWithoutNotify(settings.ExecuteCodeProjectNamespaceInjectionEnabled);
@@ -51,7 +51,7 @@ namespace MaxyMCP.Editor.MCP.Server
             projectNamespacesToggle.style.marginBottom = 2;
             parent.Add(projectNamespacesToggle);
             AddHint(parent,
-                "Off by default. When enabled, only namespaces from loaded Library/ScriptAssemblies assemblies are injected; explicit using directives remain the least ambiguous option.");
+                MaxyMCPLocalization.T("Off by default. When enabled, only namespaces from loaded Library/ScriptAssemblies assemblies are injected; explicit using directives remain the least ambiguous option."));
         }
 
         private static void AddHint(VisualElement parent, string text)

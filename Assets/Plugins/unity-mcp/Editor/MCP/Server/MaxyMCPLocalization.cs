@@ -110,6 +110,12 @@ namespace MaxyMCP.Editor.MCP.Server
             ["Default execute_code safety checks"] = "默认启用代码执行安全检查",
             ["Strict filesystem guard"] = "严格文件系统防护",
             ["Auto-inject project namespaces"] = "自动注入项目命名空间",
+            ["Default for execute_code calls when safety_checks is omitted. Explicit safety_checks=false can still bypass this for trusted local calls."] = "当未提供safety_checks参数时，作为execute_code的默认安全检查设置。对于可信的本地调用，仍可显式传入safety_checks=false绕过检查。",
+            ["Adds checks for broad System.IO file writes, raw file streams, and absolute/user/system/traversal paths. This is a defensive guard, not a complete sandbox."] = "增加对宽泛System.IO文件写入、原始文件流、绝对路径、用户目录、系统目录和路径穿越的检查。这是防御性保护，不是完整沙箱。",
+            ["Off by default. When enabled, only namespaces from loaded Library/ScriptAssemblies assemblies are injected; explicit using directives remain the least ambiguous option."] = "默认关闭。启用后，仅从已加载的Library/ScriptAssemblies程序集注入命名空间；显式写using指令仍然最清晰、最不容易产生歧义。",
+            ["On: expand all entries. Off: collapse history and expand only the latest entry. Applies immediately; manually expanded or collapsed entries keep your choice until the panel is reopened."] = "开启：展开所有条目。关闭：折叠历史记录，仅展开最新条目。设置立即生效；在重新打开面板前，手动展开或折叠的条目会保留当前状态。",
+            ["Debug logging is enabled. Plugin lifecycle, MCP request, transport, and tool execution traces are written to the Unity Console."] = "已启用调试日志。插件生命周期、MCP请求、传输过程和工具执行跟踪信息会写入Unity控制台。",
+            ["Debug logging is disabled. Warnings and errors are still written to the Unity Console."] = "已禁用调试日志。警告和错误仍会写入Unity控制台。",
         };
 
         private static readonly Dictionary<string, string> ToolTranslations = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)

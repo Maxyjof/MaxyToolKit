@@ -65,6 +65,7 @@ namespace MaxyMCP.Editor.MCP.Server
                     "For `execute_code`, prefer the IMaxyMCPCommand template over the legacy `static string Run()`: include `using MaxyMCP.Editor.Tools.Scripting;`, implement `IMaxyMCPCommand`, and use `ctx.RegisterObjectCreation`, `ctx.RegisterObjectModification`, `ctx.DestroyObject` so created/modified objects participate in editor Undo automatically. Use `ctx.Log` / `ctx.LogWarning` / `ctx.LogError` for traceable output that comes back in the response (without polluting the Unity console).",
                     "Batch related Unity-side changes in one guarded `execute_code` snippet. Null-guard every lookup, return explicit missing path/object/component messages, and include concise before/after values.",
                     "`execute_code` refreshes by default. Use skip_refresh only after independently verifying that the intended assemblies are ready, for example when initiating a test that must not be interrupted by another refresh.",
+                    "After any external edit to C# source files, do not wait for the Unity window to refresh by itself: if Unity is in Play Mode, call `exit_play_mode` first, then call `request_recompile`, `wait_for_compilation`, and `get_compilation_errors` before relying on the changed code.",
                     "After source/resource edits use `prepare_editor` with the intended edit/play target and a unique request_key; retain data.task.task_id and use `get_task` with bounded waiting and the last revision. Require operation.status=ready, current_editor.ready=true and the expected current mode before validation.",
                     "Check compiler errors, console exceptions and project initialization separately from Editor preparation.",
                     "After a dropped connection, retry the operation status read using the same ID/key. Historical reload recovery and HTTP reachability alone do not establish current readiness.",
@@ -1031,6 +1032,7 @@ $@"{ManagedMarker}
 - Save only the scene or prefab assets intentionally modified, then read back exact values.
 - Prefer structured query/audit/edit tools in Core; low-frequency configuration and preview management remain in Full. Use `get_tool_capabilities` to check exposure; respect customized allowlists.
 - `execute_code` refreshes by default; use skip_refresh only after verifying the intended assemblies are ready.
+- After any external edit to C# source files, do not wait for the Unity window to refresh by itself: if Unity is in Play Mode, call `exit_play_mode` first, then call `request_recompile`, `wait_for_compilation`, and `get_compilation_errors` before relying on the changed code.
 - In `execute_code`, null-guard every lookup and return explicit missing path/object/component messages; do not run self-healing fallback loops.
 - For Unity object references, do not use `??=` for lazy rebinding; use explicit `if (field == null) field = Resolve();`.
 - After edits use `prepare_editor` with the intended mode and a unique request_key; use the returned task_id with `get_task`, wait_seconds and after_revision until operation.status=ready and current_editor confirms readiness and mode, then check console errors. Honor poll_after_ms on unchanged results.
@@ -1079,6 +1081,7 @@ $@"{ManagedMarker}
 - Save only the scene or prefab assets intentionally modified, then read back exact values.
 - Prefer structured query/audit/edit tools in Core; low-frequency configuration and preview management remain in Full. Use `get_tool_capabilities` to check exposure; respect customized allowlists.
 - `execute_code` refreshes by default; use skip_refresh only after verifying the intended assemblies are ready.
+- After any external edit to C# source files, do not wait for the Unity window to refresh by itself: if Unity is in Play Mode, call `exit_play_mode` first, then call `request_recompile`, `wait_for_compilation`, and `get_compilation_errors` before relying on the changed code.
 - In `execute_code`, null-guard every lookup and return explicit missing path/object/component messages; do not run self-healing fallback loops.
 - For Unity object references, do not use `??=` for lazy rebinding; use explicit `if (field == null) field = Resolve();`.
 - After edits use `prepare_editor` with the intended mode and a unique request_key; use the returned task_id with `get_task`, wait_seconds and after_revision until operation.status=ready and current_editor confirms readiness and mode, then check console errors. Honor poll_after_ms on unchanged results.
@@ -1562,7 +1565,7 @@ description: {skill.Description}
    - Inspect hierarchy, prefab paths, selected objects, and relevant component references through MCP.
    - If the user names an object, treat the name as a hint and verify the real Unity object path before editing.
 2. Choose the edit surface.
-   - Edit source files with normal repo tools, then trigger Unity recompilation.
+   - Edit source files with normal repo tools, then immediately trigger Unity recompilation. After external C# edits, call `request_recompile`, `wait_for_compilation`, and `get_compilation_errors`; if Unity is in Play Mode, call `exit_play_mode` before `request_recompile`.
    - Edit scene objects through Unity APIs, mark the scene dirty, and save the scene.
    - Edit prefab fields with `set_prefab_property(ies)` when available. Use `PrefabUtility.LoadPrefabContents`, `SaveAsPrefabAsset`, and `UnloadPrefabContents` for structural changes.
    - Unless the user explicitly requests a full rebuild, preserve the existing hierarchy when editing UI or GameObject prefabs and modify only the required objects, components, and serialized fields; do not recreate the entire prefab.
@@ -1745,6 +1748,8 @@ return ""Scene saved: size "" + before + "" -> "" + rect.sizeDelta;
 ```
 
 ## Recompile And Reload
+
+When an external editor or file tool changes C# source files, always synchronize Unity before using the changed types: exit Play Mode if needed, call `request_recompile`, wait with `wait_for_compilation`, then confirm with `get_compilation_errors`. Do not assume that the Unity window has already noticed the file change.
 
 After external C# or asset file edits:
 
