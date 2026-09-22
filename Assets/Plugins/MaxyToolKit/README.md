@@ -58,7 +58,7 @@ public sealed class SaveSystem : ISystem
 | 事件总线 | `MEventBus` | 按消息类型发布和订阅事件 |
 | 响应式数据 | `MProperty`、`MListProperty`、`MDictionaryProperty` | 值变化时自动通知界面或业务逻辑 |
 | 异步 | `MTask` | 延时、下一帧和条件等待 |
-| 存档 | `MStorage` | 使用ES3保存、读取和删除数据 |
+| 存档 | `MSave` | 使用ES3将数据保存到持久化文件 |
 | 日志 | `MLog` | 统一输出普通日志、警告和错误 |
 | 工具 | `MTool` | 组件获取、层级处理、输入、角度、二维朝向、射线平面交点、轨迹计算和场景切换 |
 | 界面 | `FadeEffectOverlay` | 使用Coroutine执行淡入淡出 |
@@ -72,7 +72,7 @@ public sealed class SaveSystem : ISystem
 3. 用`MProperty`保存需要通知界面的状态
 4. 用`MSubscriptionBag`或`DisposeWith`管理订阅生命周期
 5. 用`MTask`处理延时和条件等待
-6. 用`MStorage`保存需要跨场景或跨启动保留的数据
+6. 用`MSave`保存需要跨场景或跨启动保留的数据
 
 ## 重要约定
 

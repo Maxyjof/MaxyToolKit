@@ -146,7 +146,7 @@ namespace MaxyToolKit.Examples
     }
 
     /// <summary>
-    /// 演示MProperty、列表属性、字典属性和MStorage的可运行示例
+    /// 演示MProperty、列表属性、字典属性和MSave的可运行示例
     /// </summary>
     public class PropertyExampleSceneLogic : MonoBehaviour
     {
@@ -223,8 +223,8 @@ namespace MaxyToolKit.Examples
         {
             try
             {
-                MStorage.Save("MaxyToolKit.Example.Score", score.Value);
-                MStorage.Save("MaxyToolKit.Example.Inventory", inventory.ToList());
+                MSave.Save("MaxyToolKit.Example.Score", score.Value);
+                MSave.Save("MaxyToolKit.Example.Inventory", inventory.ToList());
                 storageText.text = "存档：已保存";
             }
             catch (Exception exception)
@@ -240,8 +240,8 @@ namespace MaxyToolKit.Examples
         {
             try
             {
-                score.Value = MStorage.Load("MaxyToolKit.Example.Score", score.Value);
-                inventory.ReplaceSilently(MStorage.Load("MaxyToolKit.Example.Inventory", inventory.ToList()));
+                score.Value = MSave.Load("MaxyToolKit.Example.Score", score.Value);
+                inventory.ReplaceSilently(MSave.Load("MaxyToolKit.Example.Inventory", inventory.ToList()));
                 inventory.AddRange(Array.Empty<string>());
                 storageText.text = "存档：已读取";
                 UpdateInventory(inventory.ToList());

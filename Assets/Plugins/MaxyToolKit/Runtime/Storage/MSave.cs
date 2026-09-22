@@ -3,10 +3,24 @@ using System;
 namespace MaxyToolKit
 {
     /// <summary>
-    /// 使用Easy Save 3提供轻量存档入口
+    /// 使用Easy Save 3将数据保存到持久化文件
     /// </summary>
-    public static class MStorage
+    public static class MSave
     {
+        private const string DefaultFileName = "SaveFile.es3";
+
+        /// <summary>
+        /// 创建MaxyToolKit默认文件存储设置
+        /// </summary>
+        /// <returns>
+        /// 使用持久化数据目录和文件存储的ES3设置
+        /// </returns>
+        private static ES3Settings CreateFileSettings()
+        {
+            //明确指定文件位置，避免项目默认设置改为PlayerPrefs后影响框架存档
+            return new ES3Settings(DefaultFileName, ES3.Location.File, ES3.Directory.PersistentDataPath);
+        }
+
         /// <summary>
         /// 保存指定键和值
         /// </summary>
@@ -22,7 +36,7 @@ namespace MaxyToolKit
         public static void Save<T>(string key, T value)
         {
             ValidateKey(key);
-            ES3.Save(key, value);
+            ES3.Save(key, value, CreateFileSettings());
         }
 
         /// <summary>
@@ -43,7 +57,7 @@ namespace MaxyToolKit
         public static T Load<T>(string key, T defaultValue = default)
         {
             ValidateKey(key);
-            return ES3.Load(key, defaultValue);
+            return ES3.Load(key, defaultValue, CreateFileSettings());
         }
 
         /// <summary>
@@ -58,7 +72,7 @@ namespace MaxyToolKit
         public static bool Exists(string key)
         {
             ValidateKey(key);
-            return ES3.KeyExists(key);
+            return ES3.KeyExists(key, CreateFileSettings());
         }
 
         /// <summary>
@@ -70,7 +84,11 @@ namespace MaxyToolKit
         public static void Delete(string key)
         {
             ValidateKey(key);
-            if (ES3.KeyExists(key)) ES3.DeleteKey(key);
+            if (ES3.KeyExists(key, CreateFileSettings()))
+            {
+                //只删除当前存档文件中的指定键
+                ES3.DeleteKey(key, CreateFileSettings());
+            }
         }
 
         /// <summary>
