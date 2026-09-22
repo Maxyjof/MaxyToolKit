@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 
-namespace MaxyToolKit
+namespace MaxyToolKit.Component
 {
     /// <summary>
     /// 使用CanvasGroup执行界面淡入淡出效果

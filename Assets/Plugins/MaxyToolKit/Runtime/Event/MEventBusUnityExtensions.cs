@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace MaxyToolKit
+namespace MaxyToolKit.Event
 {
     /// <summary>
     /// 将事件订阅绑定到Unity对象生命周期的组件

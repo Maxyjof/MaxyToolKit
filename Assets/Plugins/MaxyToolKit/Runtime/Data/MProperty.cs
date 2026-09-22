@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace MaxyToolKit
+namespace MaxyToolKit.Data
 {
     /// <summary>
     /// 保存单个值并在值变化时通知订阅者

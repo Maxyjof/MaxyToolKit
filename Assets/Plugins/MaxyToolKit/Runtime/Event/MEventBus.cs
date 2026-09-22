@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace MaxyToolKit
+namespace MaxyToolKit.Event
 {
     /// <summary>
     /// 按消息类型同步分发事件的事件总线

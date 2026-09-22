@@ -1,6 +1,6 @@
 using System;
 
-namespace MaxyToolKit
+namespace MaxyToolKit.Save
 {
     /// <summary>
     /// 使用Easy Save 3将数据保存到持久化文件

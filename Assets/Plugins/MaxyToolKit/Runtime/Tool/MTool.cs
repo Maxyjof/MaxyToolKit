@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace MaxyToolKit
+namespace MaxyToolKit.Tool
 {
     /// <summary>
     /// 提供Unity对象、输入、角度、物理和集合相关的常用工具

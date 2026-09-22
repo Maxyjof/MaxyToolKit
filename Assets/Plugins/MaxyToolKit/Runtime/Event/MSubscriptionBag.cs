@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace MaxyToolKit
+namespace MaxyToolKit.Event
 {
     /// <summary>
     /// 批量管理多个可释放订阅

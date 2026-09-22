@@ -1,4 +1,4 @@
-namespace MaxyToolKit
+namespace MaxyToolKit.Core
 {
     /// <summary>
     /// 由MSystemCenter管理生命周期的全局系统

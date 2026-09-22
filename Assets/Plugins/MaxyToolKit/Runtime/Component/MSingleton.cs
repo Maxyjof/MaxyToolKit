@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace MaxyToolKit
+namespace MaxyToolKit.Component
 {
     /// <summary>
     /// 为MonoBehaviour提供单实例生命周期管理

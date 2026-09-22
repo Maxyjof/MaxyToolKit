@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace MaxyToolKit
+namespace MaxyToolKit.Tool
 {
     /// <summary>
     /// 提供可统一开关和标记的Unity日志方法

@@ -1,5 +1,6 @@
 using UnityEditor;
 using UnityEngine;
+using MaxyToolKit.Core;
 
 namespace MaxyToolKit.Editor
 {
@@ -28,7 +29,7 @@ namespace MaxyToolKit.Editor
         [MenuItem("工具/MaxyToolKit/重置全局系统")]
         private static void ResetSystems()
         {
-            MaxyToolKit.MSystemCenter.Reset();
+            MSystemCenter.Reset();
             Debug.Log("MaxyToolKit global systems reset.");
         }
     }

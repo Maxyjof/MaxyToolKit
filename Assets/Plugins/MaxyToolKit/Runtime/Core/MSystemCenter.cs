@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using MaxyToolKit.Event;
 
-namespace MaxyToolKit
+namespace MaxyToolKit.Core
 {
     /// <summary>
     /// 管理全局系统的注册、查询和生命周期

@@ -5,6 +5,10 @@
 `MProperty<T>`用于保存需要驱动界面或业务逻辑的单值状态
 
 ```csharp
+using System;
+using MaxyToolKit.Data;
+using MaxyToolKit.Tool;
+
 private readonly MProperty<int> coins = new MProperty<int>(0);
 private IDisposable coinsSubscription;
 
@@ -29,6 +33,8 @@ private void AddCoins(int value)
 ## 列表属性
 
 ```csharp
+using MaxyToolKit.Data;
+
 private readonly MListProperty<string> items = new MListProperty<string>();
 
 private void AddItem(string item)
@@ -58,6 +64,9 @@ items.EndBatch();
 `MDictionaryProperty<TKey,TValue>`用于保存配置表、状态表或缓存数据
 
 ```csharp
+using MaxyToolKit.Data;
+using MaxyToolKit.Tool;
+
 private readonly MDictionaryProperty<string, int> levels =
     new MDictionaryProperty<string, int>();
 

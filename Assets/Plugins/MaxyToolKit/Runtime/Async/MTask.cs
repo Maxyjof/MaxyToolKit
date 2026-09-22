@@ -2,7 +2,7 @@ using Cysharp.Threading.Tasks;
 using System;
 using System.Threading;
 
-namespace MaxyToolKit
+namespace MaxyToolKit.Async
 {
     /// <summary>
     /// 提供常用的UniTask异步等待封装

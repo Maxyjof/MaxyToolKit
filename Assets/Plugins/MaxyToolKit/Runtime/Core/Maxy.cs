@@ -1,4 +1,6 @@
-namespace MaxyToolKit
+using MaxyToolKit.Event;
+
+namespace MaxyToolKit.Core
 {
     /// <summary>
     /// MaxyToolKit的统一入口

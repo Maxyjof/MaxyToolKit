@@ -19,7 +19,8 @@ MaxyToolKit是面向Unity2022.3.62f3及以上版本、URP和Windows平台的实�
 ## 第一个示例
 
 ```csharp
-using MaxyToolKit;
+using MaxyToolKit.Core;
+using MaxyToolKit.Tool;
 using UnityEngine;
 
 public sealed class GameBootstrap : MonoBehaviour
@@ -87,17 +88,28 @@ public sealed class SaveSystem : ISystem
 ## 目录说明
 
 - `Runtime/Core`：全局系统和统一入口
-- `Runtime/Events`：事件总线和订阅管理
+- `Runtime/Event`：事件总线和订阅管理
 - `Runtime/Data`：响应式值、列表和字典
 - `Runtime/Async`：UniTask辅助方法
-- `Runtime/Storage`：ES3存档封装
-- `Runtime/Tools`：日志和常用工具
-- `Runtime/Components`：可直接挂载的Unity组件
-- `Runtime/Integrations`：第三方库集成扩展
+- `Runtime/Save`：ES3存档封装
+- `Runtime/Tool`：日志和常用工具
+- `Runtime/Component`：可直接挂载的Unity组件
+- `Runtime/Integration`：第三方库集成扩展
 - `Editor`：Unity编辑器菜单
 - `Examples`：可直接运行的框架功能示例场景和示例脚本
 - `Docs`：注释规范、迁移说明和教程
 - `Plugins`：随框架提供的第三方依赖
+
+## 命名空间
+
+- `MaxyToolKit.Core`：`MSystemCenter`、`ISystem`和`Maxy`
+- `MaxyToolKit.Event`：`MEventBus`和订阅生命周期管理
+- `MaxyToolKit.Data`：`MProperty`、`MListProperty`和`MDictionaryProperty`
+- `MaxyToolKit.Async`：`MTask`
+- `MaxyToolKit.Save`：`MSave`
+- `MaxyToolKit.Tool`：`MTool`和`MLog`
+- `MaxyToolKit.Component`：可挂载的Unity组件
+- `MaxyToolKit.Integration.DOTween`：DOTween集成扩展
 
 ## 文档
 

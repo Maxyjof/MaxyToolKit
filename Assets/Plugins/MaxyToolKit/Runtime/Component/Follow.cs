@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace MaxyToolKit
+namespace MaxyToolKit.Component
 {
     /// <summary>
     /// 让当前对象跟随目标对象的位置和旋转
