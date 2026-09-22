@@ -66,7 +66,7 @@ namespace MaxyToolKit.Examples
     /// <summary>
     /// 演示MEventBus和MSystemCenter的可运行示例
     /// </summary>
-    public sealed class EventBusExampleScene : MonoBehaviour
+    public class EventBusExampleSceneLogic : MonoBehaviour
     {
         private ExampleCounterSystem system;
         private IDisposable subscription;
@@ -77,7 +77,7 @@ namespace MaxyToolKit.Examples
         /// <summary>
         /// 创建界面并注册示例系统
         /// </summary>
-        private void Start()
+        protected void InitializeExample()
         {
             var uiRoot = ExampleUiFactory.CreateHeader(transform, "示例一：事件总线与全局系统", "用一条消息连接界面和全局系统");
             statusText = ExampleUiFactory.CreateText(uiRoot, "系统状态：准备中", 24, ExampleUiFactory.SecondaryText);
@@ -137,7 +137,7 @@ namespace MaxyToolKit.Examples
         /// <summary>
         /// 释放示例订阅和系统
         /// </summary>
-        private void OnDestroy()
+        protected void CleanupExample()
         {
             subscription?.Dispose();
             if (system != null && MSystemCenter.Get<ExampleCounterSystem>() == system) MSystemCenter.Remove<ExampleCounterSystem>();
@@ -147,7 +147,7 @@ namespace MaxyToolKit.Examples
     /// <summary>
     /// 演示MProperty、列表属性、字典属性和MStorage的可运行示例
     /// </summary>
-    public sealed class PropertyExampleScene : MonoBehaviour
+    public class PropertyExampleSceneLogic : MonoBehaviour
     {
         private readonly MProperty<int> score = new MProperty<int>(25);
         private readonly MListProperty<string> inventory = new MListProperty<string>(new[] { "钥匙", "地图" });
@@ -163,7 +163,7 @@ namespace MaxyToolKit.Examples
         /// <summary>
         /// 创建响应式数据示例界面
         /// </summary>
-        private void Start()
+        protected void InitializeExample()
         {
             var uiRoot = ExampleUiFactory.CreateHeader(transform, "示例二：MProperty响应式数据", "值变化时自动通知界面，集合变化时同步刷新");
             valueText = ExampleUiFactory.CreateText(uiRoot, "分数：25", 28, Color.white);
@@ -254,7 +254,7 @@ namespace MaxyToolKit.Examples
         /// <summary>
         /// 释放属性订阅
         /// </summary>
-        private void OnDestroy()
+        protected void CleanupExample()
         {
             foreach (var subscription in subscriptions) subscription?.Dispose();
             subscriptions.Clear();
@@ -264,7 +264,7 @@ namespace MaxyToolKit.Examples
     /// <summary>
     /// 演示MTask和FadeEffectOverlay的可运行示例
     /// </summary>
-    public sealed class AsyncExampleScene : MonoBehaviour
+    public class AsyncExampleSceneLogic : MonoBehaviour
     {
         private CancellationTokenSource cancellation;
         private Text statusText;
@@ -274,7 +274,7 @@ namespace MaxyToolKit.Examples
         /// <summary>
         /// 创建异步任务示例界面
         /// </summary>
-        private void Start()
+        protected void InitializeExample()
         {
             var uiRoot = ExampleUiFactory.CreateHeader(transform, "示例三：异步等待与淡入淡出", "MTask负责等待，FadeEffectOverlay负责界面过渡");
             statusText = ExampleUiFactory.CreateText(uiRoot, "状态：等待开始", 24, Color.white);
@@ -338,7 +338,7 @@ namespace MaxyToolKit.Examples
         /// <summary>
         /// 取消未完成任务并释放资源
         /// </summary>
-        private void OnDestroy()
+        protected void CleanupExample()
         {
             cancellation?.Cancel();
             cancellation?.Dispose();
@@ -348,7 +348,7 @@ namespace MaxyToolKit.Examples
     /// <summary>
     /// 演示MTool、DOTween和运行时对象操作的可运行示例
     /// </summary>
-    public sealed class ToolsExampleScene : MonoBehaviour
+    public class ToolsExampleSceneLogic : MonoBehaviour
     {
         private GameObject cube;
         private GameObject cameraObject;
@@ -360,7 +360,7 @@ namespace MaxyToolKit.Examples
         /// <summary>
         /// 创建工具示例界面和可操作立方体
         /// </summary>
-        private void Start()
+        protected void InitializeExample()
         {
             var uiRoot = ExampleUiFactory.CreateHeader(transform, "示例四：常用工具与动画", "MTool处理对象和数值，DOTween负责轻量动画");
             var background = uiRoot.Find("背景")?.GetComponent<Image>();
@@ -447,7 +447,7 @@ namespace MaxyToolKit.Examples
         /// <summary>
         /// 销毁示例对象并停止动画
         /// </summary>
-        private void OnDestroy()
+        protected void CleanupExample()
         {
             if (cube != null) cube.transform.DOKill();
             if (previewRect != null) previewRect.DOKill();
