@@ -1,561 +1,134 @@
-<p align="center">
-  <h1 align="center">MaxyMCP Unity MCP（中文本地版）</h1>
-  <p align="center">
-    <strong>面向 Unity 编辑器的中文 MCP 服务器</strong>
-  </p>
-  <p align="center">
-    <a href="#"><img src="https://img.shields.io/badge/Unity-2022.3%2B-black?logo=unity" alt="Unity 2022.3+"></a>
-    <a href="#"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
-    <a href="#"><img src="https://img.shields.io/badge/MCP-Compatible-green" alt="MCP Compatible"></a>
-    <a href="#"><img src="https://img.shields.io/badge/Platform-Editor%20Only-orange" alt="Editor Only"></a>
-  </p>
-  <p align="center">
-    中文本地版
-  </p>
-  <p align="center">
-    <img src="./Documentation~/Text%2BLogo.png" alt="The Most Advanced MCP Server for Unity" width="100%">
-  </p>
-</p>
+# MaxyMCP
 
-> 💖 如果这个项目对你有帮助，欢迎顺手点一个 Star。它能帮助更多 Unity 开发者发现这个项目，也能支持后续持续维护。
+MaxyMCP是面向Unity编辑器的本地MCP服务器。它让支持MCP的AI客户端通过HTTP连接正在运行的Unity工程，读取工程状态、修改资源、编写代码、运行测试并检查结果。
 
----
+本版本面向中文用户：
 
-MaxyMCP Unity MCP（中文本地版）是一个采用 MIT 协议的 Unity 编辑器 MCP 服务器。编辑器界面、菜单、状态提示以及本地化相关注释统一使用正式中文，本版本不提供语言切换或其他本地化方案；工具标识、协议字段和发送给 AI 的技能正文保持英文，以确保客户端兼容。它可以让 Claude Code、Cursor、Kimi Code、LM Studio、Windsurf、Codex、VS Code Copilot 等 AI 助手直接操作正在运行的 Unity 项目。
-
-一句话描述你的游戏 — AI 助手通过 MaxyMCP MCP for Unity 的内置工具自动创建场景、编写脚本、验证运行态、模拟输入、分析性能并完成编辑器自动化，把所有逻辑串联起来。
-
-> *"做一个贪吃蛇游戏，10x10 网格，食物随机生成，计分 UI，游戏结束界面"*
->
-> AI 助手通过 MaxyMCP MCP for Unity 全程处理：创建场景、生成全部脚本、搭建 UI、配置游戏逻辑 — 只需一句话。
-
-<p align="center">
-  <img src="./Documentation~/demo.gif" alt="MaxyMCP MCP for Unity — 16 秒 demo" width="100%">
-</p>
-<p align="center"><em>16 秒 demo — AI 生成 3D 模型并端到端集成进场景。<a href="https://github.com/MaxyMCPAI/maxymcp-unity-mcp/raw/main/Documentation~/demo.mp4">观看高清 MP4</a>。</em></p>
-
-## 快速开始
-
-如果你只想尽快跑起来，先做这三步：
-
-- 用 Git URL 安装 Unity 包
-- 打开 `MaxyMCP > MCP Server`
-- 使用内置的一键客户端配置
-
-### 1. 通过 UPM 安装 (Git URL)
-
-在 Unity 中，打开 **Window → Package Manager → + → Add package from git URL**：
-
-```
-https://github.com/MaxyMCPAI/maxymcp-unity-mcp.git
-```
-
-> 💡 在 clone 或安装之前，如果你愿意顺手点一个 ⭐，会非常感谢。
-
-### 可选方案：通过 OpenUPM 安装
-
-如果你希望 Unity Package Manager 显示 registry 提供的完整“版本历史记录”并能选择历史版本，可以改用 OpenUPM 安装。
-
-使用 OpenUPM CLI：
-
-```bash
-openupm add com.maxy.maxymcp
-```
-
-或者手动在 `Packages/manifest.json` 中添加 scoped registry：
-
-```json
-{
-  "scopedRegistries": [
-    {
-      "name": "OpenUPM",
-      "url": "https://package.openupm.com",
-      "scopes": [
-        "com.maxy"
-      ]
-    }
-  ],
-  "dependencies": {
-    "com.maxy.maxymcp": "0.6.9"
-  }
-}
-```
-
-如果之前是用 Git URL 安装的，先移除 Git dependency，再从 OpenUPM 安装。Git 来源的包在 Unity 中只会显示当前解析到的 Git 版本，不会显示 registry 提供的完整 Version History。
-
-### 2. 启动 MCP Server
-
-**菜单：MaxyMCP → MCP Server** 启动服务。
-
-新工程使用**按工程路径派生的独立端口**，因此同时打开两个工程的编辑器不会互相抢端口。MCP Server 窗口会显示实际地址（`http://127.0.0.1:<端口>/`），一键配置会把该地址写进客户端配置。需要固定端口（CI / 防火墙规则）时在 **Server Port** 里填一个即可 pin 住，点 **Use Per-Project Port** 改为按工程派生。
-
-从旧版本升级不会有任何变化：工程会保留原来在用的端口（记为 pin），已配置的客户端照旧可用。等到需要让该工程与另一个编辑器同时服务时，再点一次 **Use Per-Project Port** 即可。完整配置指南见 [同时开多个 Unity 工程](Documentation~/multi-project-setup.zh-CN.md)。
-
-如果窗口显示当前使用回退端口，不要继续使用仍指向被占稳定端口的客户端条目；它可能连到占着该端口的另一个进程。一键配置会保持阻止，直到你点 **Use Per-Project Port** 或 **Pin Current Port**，并等服务器完成重启。
-
-默认传输仍然是进程内 Direct HTTP。如果你需要在 Unity 脚本重编译或进入 Play Mode 触发域重载时尽量保持 MCP 客户端连接，可以在 MCP Server 窗口启用 **Experimental Broker Mode**。它会用 Unity 自带 Mono 启动一个很小的本地 broker，客户端仍然连接同一个 `127.0.0.1` 端口，不需要改 MCP 配置。
-
-如果你想编辑 `core` 或 `full` 各自暴露哪些工具，可以打开 **MaxyMCP → Tool Exposure**。
-
-如果需要调整 `execute_code` 安全默认值或插件 debug 日志，可以打开 **MaxyMCP → MCP Settings**。
-
-### 3. 配置 AI 客户端
-
-优先使用 `MaxyMCP > MCP Server` 窗口里的 **一键 MCP 配置**。
-
-选择目标客户端后点击 **Configure**，插件会直接帮你写入推荐的 MCP 配置项。
-
-对于 Claude Code、Cursor、Codex、OpenCode 和 DeepSeek Harness，也可以点击 **Configure + Skills**，同时安装两个内置项目 skills。
-
-如果你希望为当前 Unity 项目配置项目级 AI 指引，可以打开 **MaxyMCP → Project Skills**，为支持的平台安装内置的 `unity-mcp-workflow` 和 `unity-ui-composition` skills，其中 UI skill 用于竖屏、横屏响应式 uGUI 工作。
-
-如果你更想手动编辑配置文件，再参考下面这些示例（把 `<project>` 换成本工程的条目名、`<port>` 换成本工程端口——MCP Server 窗口里两者都有显示）：
-
-<details>
-<summary>Claude Code / Claude Desktop</summary>
-
-```json
-{
-  "mcpServers": {
-    "maxymcp-<project>": {
-      "type": "http",
-      "url": "http://127.0.0.1:<port>/"
-    }
-  }
-}
-```
-
-</details>
-
-<details>
-<summary>Cursor</summary>
-
-```json
-{
-  "mcpServers": {
-    "maxymcp-<project>": {
-      "url": "http://127.0.0.1:<port>/"
-    }
-  }
-}
-```
-
-</details>
-
-<details>
-<summary>LM Studio</summary>
-
-LM Studio 的 `mcp.json` 路径会随版本和平台变化。建议优先在 LM Studio 中通过 **Program > Install > Edit mcp.json** 打开当前生效的配置文件。MaxyMCP 的一键 Configure 会打开 LM Studio 官方 `lmstudio://add_mcp` 链接，并且只在发现已有配置文件时顺手更新它，不会创建一个猜测出来的路径。
-
-```json
-{
-  "mcpServers": {
-    "maxymcp-<project>": {
-      "url": "http://127.0.0.1:<port>/"
-    }
-  }
-}
-```
-
-</details>
-
-<details>
-<summary>VS Code</summary>
-
-```json
-{
-  "servers": {
-    "maxymcp-<project>": {
-      "type": "http",
-      "url": "http://127.0.0.1:<port>/"
-    }
-  }
-}
-```
-
-</details>
-
-<details>
-<summary>Trae</summary>
-
-```json
-{
-  "mcpServers": {
-    "maxymcp-<project>": {
-      "url": "http://127.0.0.1:<port>/"
-    }
-  }
-}
-```
-
-</details>
-
-<details>
-<summary>Kiro</summary>
-
-```json
-{
-  "mcpServers": {
-    "maxymcp-<project>": {
-      "type": "http",
-      "url": "http://127.0.0.1:<port>/"
-    }
-  }
-}
-```
-
-</details>
-
-<details>
-<summary>Kimi / Kimi Code</summary>
-
-当前 Kimi Code 会从项目级 `.kimi-code/mcp.json` 加载 MCP Server（参见[官方 MCP 文档](https://moonshotai.github.io/kimi-code/zh/customization/mcp.html)）。MaxyMCP 的一键 Configure 会写入这里，避免当前 Unity Server 出现在无关项目的 Kimi 会话中。如果机器上只检测到旧版 Kimi CLI 数据目录，则改写兼容的用户级 `~/.kimi/mcp.json`。配置完成后，从 Unity 项目根目录启动新的 Kimi 会话；首次使用时请检查回环地址并信任工作区。项目配置包含本机端口，通常不应提交，除非团队有意共用同一个固定端口。
-
-```json
-{
-  "mcpServers": {
-    "maxymcp-<project>": {
-      "url": "http://127.0.0.1:<port>/"
-    }
-  }
-}
-```
-
-</details>
-
-<details>
-<summary>Codex</summary>
-
-```toml
-[mcp_servers.maxymcp-<project>]
-url = "http://127.0.0.1:<port>/"
-```
-
-</details>
-
-<details>
-<summary>OpenCode</summary>
-
-写入仓库自身的 `.opencode/opencode.json`（而非全局配置），因此只有在本仓库内启动的 OpenCode 会话才会看到本编辑器的工具。
-
-```json
-{
-  "mcp": {
-    "maxymcp-<project>": {
-      "type": "remote",
-      "url": "http://127.0.0.1:<port>/",
-      "enabled": true
-    }
-  }
-}
-```
-
-</details>
-
-<details>
-<summary>DeepSeek Harness</summary>
-
-以带分隔标记的托管块写入每个 DeepSeek Harness profile 的 `~/.dsh/profiles/<profile>/cordis.patch.yml`：DSH 每次启动通过 `--profile` 组合插件，对外并不暴露某个“当前生效”的 profile。重新配置时托管块之外的内容原样保留，手工删除该块即可卸载。
-
-```yaml
-# >>> maxymcp-mcp:maxymcp-<project> begin (managed by MaxyMCP MCP -- reconfigure from Unity > MaxyMCP > MCP Server)
-# MaxyMCP Unity MCP endpoint served by this editor; tools appear as mcp__maxymcp-<project>__<tool>.
-- insert:
-    - id: mcp-maxymcp-<project>
-      name: '@deepseek-ai/dsh-mcp-client'
-      config:
-        serverName: maxymcp-<project>
-        transport: streamable-http
-        url: http://127.0.0.1:<port>/
-# <<< maxymcp-mcp:maxymcp-<project> end
-```
-
-</details>
-
-<details>
-<summary>Antigravity</summary>
-
-写入工作区级 `.agents/mcp_config.json`，在 `mcpServers` 中使用 `serverUrl` 指向 MaxyMCP 的 Streamable HTTP 端点，使服务器配置仅在该工作区中生效。请使用支持[工作区 MCP 配置](https://antigravity.google/docs/mcp/)的当前 Antigravity 版本，配置后重新加载 MCP 服务器。
-
-工作区根目录取最近的包含 `.git` 的祖先目录（包括 worktree 的 `.git` 文件）；项目不在 Git 仓库中时使用 Unity 工程目录。请在 Antigravity 中打开该目录。**Configure + Skills** 会将 `.agents/mcp_config.json`、`.agents/skills/` 和 `AGENTS.md` 托管块放在同一根目录下，也适用于 Unity 工程嵌套在仓库中的情况。其他客户端沿用现有指引位置，路径相同时共用托管块。
-
-如果 `~/.gemini/config/mcp_config.json` 或旧版 `~/.gemini/antigravity/mcp_config.json` 中已有 MaxyMCP 条目，面板会显示提示并保留原文件。完成各工作区配置后再检查这些全局条目；一键配置不会自动回退到全局配置。同一仓库中的多个 Unity 工程共用工作区，其 MCP 条目各自命名；Project Skills 遇到其他工程已有的工作区托管指引时会停止，避免覆盖工程身份。
-
-```json
-{
-  "mcpServers": {
-    "maxymcp-<project>": {
-      "serverUrl": "http://127.0.0.1:<port>/"
-    }
-  }
-}
-```
-
-</details>
-
-<details>
-<summary>Windsurf</summary>
-
-除非你本地 Windsurf 版本要求不同的 MCP 配置格式，否则可直接使用与 Cursor 相同的 JSON 结构。
-
-</details>
-
-### 4. 验证连接
-
-先在 AI 客户端里试几个安全请求：
-
-> “调用 `get_scene_info`，告诉我当前打开的是哪个场景。”
-
-> “读取 `unity://project/context`，总结当前编辑器状态。”
-
-> “调用 `execute_code`，返回当前激活场景名。”
-
-如果这些都正常返回，说明 MCP server、resources 和主执行工具都已经连通。
-
-### 5. 开始构建
-
-打开你的 AI 客户端，试试：*"创建一个 3D 平台跳跃关卡，包含 5 个浮空平台"*
-
-## 开始前说明
-
-- 这是一个 **仅限 Editor** 的包，不会向最终构建产物添加运行时代码。
-- MCP Server 端口对**新工程**按工程派生（20000-29999 区间）；从旧版本升级的工程会保留原端口并记为 pin，手填的端口同样是 pin。MCP Server 窗口会显示端口来源与当前实际地址。客户端配置里的条目名按**工程目录名**命名（例如 `maxymcp-love-town`，只保留 ASCII 字母数字），多个工程不再互相覆盖同一个 `maxymcp` 条目。两个工程产品名相同时会解析出同一个条目名，此时后配置的那个会**自动追加工程哈希**，既不会覆盖对方，也不需要用户去开任何开关。
-- 本地 MCP Server 配置保存在 `UserSettings/MaxyMCPSettings.json`。
-- v0.6.9 默认 `core` 精选 40 个工具，覆盖结构化检查与修改、UI 巡检和创建、可恢复的编译准备、统一任务查询、视觉证据、输入和日志。短任务可一次返回结果，`get_task` 支持有限等待、状态变化后返回和退避提示；`execute_code` 保留为项目特定逻辑的兜底。`full` 保留全部 180 个工具，包括原有状态、编译与 Play 接口，以及配置、预览管理和专项诊断。已有自定义暴露列表不会被覆盖，可用 `get_tool_capabilities` 区分“已实现”和“已暴露”。升级后请通过 Project Skills 更新已安装的内置技能。
-- `execute_code` safety checks 和更严格的文件系统 guard 现在可在 **MaxyMCP > MCP Settings** 设置默认值，默认开启；它会阻止明显破坏性片段、宽泛的 `System.IO` 写入、原始文件流、绝对路径、用户/系统目录路径和 `../` 穿越路径，但它不是完整沙箱。客户端仍可在单次调用中用可选 `safety_checks` 参数显式覆盖。
-- 插件 debug 日志默认关闭，也可在 **MaxyMCP > MCP Settings** 中开启；Warning 和 Error 始终会输出到 Unity Console。
-- 所有已暴露的 MCP 工具都会直接执行，不再提供额外的 approval 开关。
-- 本地版本已移除更新检查器，所有修改由你自行维护，不会被上游更新自动替换。
-
-## 能力概览
-
-- **`execute_code` 主工具优先** — 核心体验围绕一个内存 C# 执行工具构建，适合复杂编辑器/运行态编排。详见下方 [`execute_code`：内存 C# 执行](#execute_code内存-c-执行)。
-- **默认安全检查** — `execute_code` 现在有持久化、默认开启的 safety toggle，并包含更严格的文件系统 guard，适合 LM Studio 这类不明显暴露单次参数的客户端
-- **Play Mode 自动化闭环** — 进入运行模式、模拟键鼠输入、截图、查看日志、验证行为都能在同一 MCP 会话里完成
-- **内建项目上下文** — 直接提供项目状态、当前场景、选择对象、编译错误、控制台输出和 MCP 交互记录资源
-- **默认聚焦，必要时全量** — 默认 `core` 工具集更利于 AI 选工具，需要时可切到 `full` 暴露开发版的全部 180 个工具
-- **单 Unity 包落地** — 不需要额外 approval 开关，Unity 侧也不依赖单独 Python 守护进程
-- **可扩展** — 支持 Attribute 发现自定义工具，也支持连接外部 MCP 服务
-
-## 核心特性
-
-- **180 个内置工具** — 覆盖场景编辑、脚本、资产、运行态控制、截图、性能分析、Prompts、Resources、结构化对象定位、SerializedObject 组件编辑、编辑器状态读写、菜单项兜底以及编辑器自动化，共 42 个模块
-- **结构化返回 + `instanceId` 链式调用** — 工具返回 `{success, message, data}` JSON 并附带稳定的 `instanceId`，agent 后续直接 `by_id` 调用，不再受重名困扰
-- **`execute_code` 的 `IMaxyMCPCommand` 模板** — 新模板自动 Undo（`ctx.RegisterObjectCreation/Modification/DestroyObject`）、结构化日志（`ctx.Log/LogWarning/LogError`），并把改动列表回传给 agent
-- **Resources 与 Prompts** — 暴露实时项目上下文、场景/选择/错误资源、资源模板，以及常见 Unity 工作流的可复用 MCP Prompt
-- **输入模拟 + 截图验证** — 在 Play Mode 中模拟键盘/鼠标，再用 Game View / Scene View 截图验证结果
-- **内置更新** — 直接在 Unity 菜单中检查更新，并根据安装方式自动重新拉取 Git 包或导入最新 `unitypackage`
-- **一键客户端配置** — 直接在 Unity 窗口里为 Claude Code、Cursor、Kimi、LM Studio、VS Code、Kiro、Trae、Codex、OpenCode、DeepSeek Harness、Antigravity 等客户端生成 MCP 配置
-- **工具暴露控制** — 编辑 `core` 和 `full` 各自暴露的具体工具
-- **外部代码自动编译** — 修改Assets下的脚本后调用 `request_recompile`，MaxyMCP会主动刷新AssetDatabase并等待Unity重新编译；`wait_for_compilation`与`get_compilation_errors`可用于补充确认
-- **项目 Skills 管理器** — 为支持的 AI 客户端配置项目级 skills，包含内置的 `unity-mcp-workflow` 与 `unity-ui-composition` 指引
-- **插件设置** — 排查 MCP 连接或工具执行问题时，可开关详细 debug 日志
-- **厂商无关** — 兼容任意支持 MCP 的 AI 客户端：Claude Code、Cursor、Kimi Code、LM Studio、Windsurf、Codex、VS Code Copilot 等
-
-## `execute_code`：内存 C# 执行
-
-`execute_code` 是 MaxyMCP MCP for Unity 的核心工具。AI 写一段 C#，通过 Roslyn 优先的内存编译流程完成编译，并在编辑器线程直接执行——agent 拿到 Unity Editor 与 Runtime 的全套 API，但完全不需要往项目里写文件。
-
-- **零项目落盘编译** —— 优先使用 Unity 自带 Roslyn csc 编译，同时保留内存编译/内存执行流程。`Assets/` 下不会多出 `.cs` 文件，不会触发 domain reload，除非 snippet 自己显式改，否则项目状态不动。
-- **运行前自动就绪** —— 每次调用都会先刷新 AssetDatabase 并等待 pending compilation 完成，外部文件编辑会被自动拾取，不需要额外 `request_recompile`。
-- **自动 Undo + 结构化日志（推荐模板）** —— 实现 `IMaxyMCPCommand`，用注入的 `ExecutionContext`：所有新建/修改/销毁的对象都自动进 editor Undo，改动列表也会回传给 agent。
-
-```csharp
-using UnityEngine;
-using UnityEditor;
-using MaxyMCP.Editor.Tools.Helpers;
-using MaxyMCP.Editor.Tools.Scripting;
-
-public class CommandScript : IMaxyMCPCommand
-{
-    public void Execute(ExecutionContext ctx)
-    {
-        var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        ctx.RegisterObjectCreation(go);          // 自动 Undo + 追踪
-        ctx.Log("Created {0}", go.name);
-        ctx.ReturnValue = GameObjectSerializer.Describe(go, includeComponents: false);
-    }
-}
-```
-
-返回里带 `{ logs, created, modified, destroyed, returnValue }`，agent 不用再回查场景就能确认改动。
-
-旧模板（`public static string Run()`）仍然兼容，适合一次性 inspection snippet——不需要结构化追踪的场景。
-
-**什么时候用 `execute_code` vs 专门工具** —— `execute_code` 适合多步编排、新颖查询、或者会被拆成 5-10 个细粒度调用的场景，一段 snippet 比一连串小工具更省。要是单字段组件修改、简单选中切换，或者已有专门工具能搞定的，优先用专门工具——对 LLM 调用成本更低、验证更直接。
-
-## 与 Coplay 的对比
-
-下表基于 Coplay 官方公开 GitHub README 所描述的能力与安装方式进行对比。
-
-| 维度 | MaxyMCP MCP for Unity | Coplay `unity-mcp` |
-|------|-------------------------|--------------------|
-| Unity 侧架构 | Unity 包内置 HTTP MCP server | Unity bridge + 本地 Python MCP server |
-| 额外本地依赖 | `core` 工作流下只需要 Unity 包本身 | 官方 quick start 要求 Python 3.10+ 与 `uv` |
-| 主要交互模型 | 以 `execute_code` 为主，再配合少量高频辅助工具 | 以大量 `manage_*` 工具族为主 |
-| 默认工具暴露 | 默认 `core` 精简工具集，可切 `full` | 公开文档强调广泛工具面 |
-| 上下文能力 | 内建项目资源、资源模板、工作流 prompts、交互历史 | 公开 README 主要强调 bridge/server 与工具族 |
-| Play Mode 验证 | 包内置运行模式控制、截图、日志、输入模拟 | 公开 README 强调广泛 Unity 管理与自动化能力 |
-| 定位 | 轻量、直接、MIT 协议的 Unity MCP 服务器 | Coplay 维护的全功能 Unity bridge 方案 |
-
-Coplay 信息来源：[CoplayDev/unity-mcp](https://github.com/CoplayDev/unity-mcp)
-
-## 与 Unity AI Assistant 的对比
-
-下表对比本仓库与 Unity Technologies 官方包 `com.unity.ai.assistant`（2026-05 时点 v2.7.0-pre.2）。
-
-| 维度 | MaxyMCP MCP for Unity | Unity AI Assistant |
-|------|-------------------------|--------------------|
-| 最低 Unity 版本 | 2022.3 | 6000.3（仅 Unity 6）|
-| 协议 / License | MIT 开源 | Unity Terms of Service，私有 |
-| 部署 | Editor 内嵌 HTTP MCP server，纯本地 | Editor + 原生 Relay 子进程 + Unity Cloud 后端 |
-| 计费 | 免费，用户自带 AI 客户端 | Credits 点数制（Unity Dashboard）|
-| 工具暴露 | 开发版 180 工具 / 42 模块，`core` (40) / `full` profile | ~15 个 MCP 工具（多数为 `Manage*` 大粒度族）|
-| 通用逃生口 | `execute_code` — Roslyn 优先内存编译、`IMaxyMCPCommand` + Undo、无沙箱（客户端层审批）| `RunCommand` — 命名空间黑名单沙箱 |
-| Play Mode 验证 | 完整闭环：进入 / 模拟输入 / 截图 / 读日志 / 退出 | 仅进入/退出，无输入模拟 |
-| 资产生成器 | 不内建（通过 `execute_code` 组合外部 API）| 内建 Image / Mesh / PBR / Sound / Animation 五类生成器 |
-| 主要客户端模型 | BYO 任意 MCP 客户端（Claude Code / Cursor / Kimi / LM Studio / Codex / VS Code）| 自带对话窗口 + ACP 经 Gateway 接 Claude/Gemini |
-| 离线可用 | ✅ 工具调用本身全本地（推理依赖所选客户端）| ❌ 推理必须连 Unity Cloud |
-
-长文对比见 [MaxyMCP Unity MCP 与 Unity AI Assistant 详细对比](https://blog.csdn.net/m0_62670368/article/details/161039766)。
-
-## MCP 能力结构
-
-当前开源包有四层高价值能力：
-
-- **Tools** — 开发版 `full` 下共 180 个工具，`core` 下 40 个高频工具
-- **Primary execution** — `execute_code` 用于复杂编辑器/运行态编排
-- **Prompts** — 参数化工作流 Prompt：`edit_prefab_safely`、`verify_compilation`、`enter_play_and_recover`、`wire_serialized_references`、`create_playable_prototype`。项目可通过根目录下的 `mcp-prompts/*.md` 注册专属 Prompt。
-- **Resources** — 项目上下文、场景摘要、选择状态、编译错误、控制台错误、MCP 交互记录，以及按对象/组件/资源路径展开的模板资源
-
-### 项目 Prompt
-
-项目 Prompt 文件使用轻量、无额外依赖的 front-matter 格式，后面跟随工作流正文：
-
-```markdown
----
-name: validate_activity
-description: Open and validate a project activity.
-arguments: activity_key(required), theme_id
----
-Open activity {activity_key} with theme {theme_id}, then validate its runtime state.
-```
-
-Prompt 名称和参数名必须匹配 `[a-z][a-z0-9_-]{0,63}`。`prompts/get` 会拒绝缺失的必填参数、未知参数和非字符串参数；未提供的可选参数占位符会替换为空字符串。定义会在 MCP Server 启动时缓存，因此修改 Prompt 文件后需重启 Server 或触发一次 Unity 域重载。
-
-## 内置工具
-
-v0.6.9 提供 **180 个工具函数**，覆盖 42 个模块，默认暴露其中 40 个高频工具。
-
-新增 UI 工作流包括：`prepare_editor` 持久任务、`audit_ui` 只读巡检、组件属性查询和 Sprite 关联检查、统一截图/输入坐标、项目级 TMP/字体材质/预制体/输入模块默认值、录屏动作标记与关键帧提取，以及可恢复的预览会话。详见 [完整工作流指南](Documentation~/ui-workflows.md) 和 [实现与验证清单](Documentation~/ui-workflow-upgrade-plan.md)。两项内置 skills 也已同步这些规则，仍为 built-in；已有安装可通过 Project Skills 更新。
-
-| 分类 | 工具 |
-|------|------|
-| **游戏对象** | `create_primitive`, `create_game_object`, `delete_game_object`, `find_game_objects`, `get_game_object_info`, `set_transform`, `duplicate_game_object`, `rename_game_object`, `set_parent`, `add_component`, `set_tag_and_layer`, `set_active` |
-| **层级** | `get_hierarchy` |
-| **组件** | `get_component_properties`, `list_components`, `set_component_property`, `set_component_properties` |
-| **组件批处理** | `copy_component`, `paste_component_values`, `add_component_to_many` |
-| **脚本** | `create_script`, `edit_script`, `patch_script` |
-| **资产** | `create_material`, `assign_material`, `find_assets`, `delete_asset`, `rename_asset`, `copy_asset` |
-| **资产导入** | `get_asset_import_settings`, `set_asset_import_settings` |
-| **引用关系** | `find_references`, `find_broken_references` |
-| **网格** | `get_mesh_info` |
-| **材质属性** | `get_material_properties`, `set_material_property` |
-| **文件** | `read_file`, `write_file`, `search_files`, `list_directory`, `exists` |
-| **场景** | `get_scene_info`, `list_scenes`, `load_scene_additive`, `unload_scene`, `list_dirty_scenes`, `save_all_scenes`, `save_scene`, `open_scene`, `create_new_scene`, `enter_play_mode`, `exit_play_mode`, `set_time_scale`, `get_time_scale` |
-| **物理查询** | `physics_raycast`, `physics_overlap`, `physics2d_overlap_point` |
-| **粒子系统** | `particle_control` |
-| **灯光** | `get_lighting_settings`, `set_lighting_settings`, `bake_lightmaps` |
-| **Timeline** | `director_evaluate` |
-| **预制体** | `create_prefab`, `instantiate_prefab`, `unpack_prefab`, `open_prefab_stage`, `save_prefab_stage`, `close_prefab_stage`, `set_prefab_property`, `set_prefab_properties` |
-| **ScriptableObject** | `create_scriptable_object`, `get_scriptable_object`, `set_scriptable_object_properties` |
-| **UI** | `create_canvas`, `create_button`, `create_text`, `create_image`, `raycast_at_point`, `get_ui_defaults`, `configure_ui_defaults`, `create_project_ui` |
-| **UI 巡检** | `audit_ui`, `get_ui_audit`, `cancel_ui_audit` |
-| **UI 预览** | `start_ui_preview_session`, `get_ui_preview_session`, `end_ui_preview_session` |
-| **结构化检查** | `find_project_types`, `inspect_ui_sprites`, `get_tool_capabilities` |
-| **视觉坐标** | `get_visual_coordinates`, `get_object_screen_bounds` |
-| **动画** | `create_animation_clip`, `create_animator_controller`, `assign_animator`, `get_animator_state`, `set_animator_parameter`, `play_animator_state` |
-| **相机** | `get_camera_properties`, `set_camera_projection`, `set_camera_settings`, `set_camera_culling_mask` |
-| **截图** | `capture_game_view`, `capture_simulator_view`, `capture_scene_view`, `capture_multiview`, `capture_editor_window` |
-| **录屏** | `record_game_view`, `mark_recording`, `extract_recording_frames`, `get_recording_frame` |
-| **脚本执行** | `execute_code`, `get_execute_code_history`, `replay_execute_code`, `clear_execute_code_history` |
-| **输入模拟** | `simulate_key_press`, `simulate_key_combo`, `simulate_mouse_click`, `simulate_mouse_drag`, `simulate_ui_scroll` |
-| **性能分析** | `get_performance_snapshot`, `analyze_scene_complexity` |
-| **Profiler** | `profiler_start`, `profiler_stop`, `profiler_status`, `get_frame_timing`, `get_counters`, `get_object_memory`, `get_top_memory_objects`, `memory_take_snapshot`, `memory_list_snapshots`, `memory_compare_snapshots`, `frame_debugger_enable`, `frame_debugger_disable`, `frame_debugger_get_events` |
-| **内存快照** | `memory_take_full_snapshot`, `memory_list_full_snapshots`, `memory_open_snapshot_in_profiler`, `memory_query_top_objects`, `memory_query_references` |
-| **包管理** | `install_package`, `remove_package`, `list_packages` |
-| **编译** | `wait_for_compilation`, `request_recompile`, `get_compilation_errors`, `get_reload_recovery_status` |
-| **编辑器任务** | `prepare_editor`, `get_editor_operation`, `list_editor_operations`, `cancel_editor_operation` |
-| **统一任务查询** | `get_task`（只读状态查询、有限等待和状态变化后返回） |
-| **测试** | `run_tests`, `get_test_job`, `cancel_test_run` |
-| **编辑器状态** | `get_editor_state`, `get_selection`, `set_selection`, `get_prefab_stage`, `get_active_tool`, `set_active_tool`, `get_windows`, `get_tags`, `add_tag`, `remove_tag`, `get_layers`, `add_layer`, `get_build_settings` |
-| **项目设置** | `get_project_settings` |
-| **撤销/重做** | `undo`, `redo`, `get_undo_state` |
-| **菜单项** | `execute_menu_item`, `validate_menu_item` |
-| **可视化反馈** | `select_object`, `focus_on_object`, `ping_asset`, `log_message`, `show_dialog`, `get_console_logs` |
-
-> 📊 完整的 Profiler 工具参考、实现细节、已知限制和测试报告见 [PROFILER_TOOLS_CN.md](PROFILER_TOOLS_CN.md)。
-
-### 录制 Game View 视频
-
-默认 `core` 工具集中的 `record_game_view` 可将 UI 动画、转场和连续操作录成一段**无音轨 MP4**，用于视觉检查。使用 Unity 自带的 [MediaEncoder](https://docs.unity3d.com/2022.3/Documentation/ScriptReference/Media.MediaEncoder.html)，不需要安装 Recorder 包或外部编码器。
-
-1. 进入 Play Mode，等待域重载恢复，并打开 Game 标签页使其正常渲染。
-2. 调用 `record_game_view`，参数为 `{"action":"start","duration_seconds":10,"fps":15,"max_dimension":1280}`，保留返回的 `recording_id`。
-3. 开始调用立即返回，可在录制期间继续模拟输入和操作；达到时长上限后自动停止。
-4. 使用 `{"action":"status","recording_id":"<id>"}` 查询状态。若要提前结束，调用 `action:"stop"`，然后继续查询直至文件完成封装。
-5. 只有 `ready:true` 时才读取返回的本地 `path`。MCP 响应不会内嵌视频数据；远程客户端需要另行获得 Unity 所在机器的文件访问能力。
-
-视频采用唯一文件名，保存在 `<UnityProject>/Library/MaxyMCP/Recordings/`，不会自动删除。开始录制可设置 1–120 秒、1–60 目标 FPS，以及 128–1920 像素的最长边；保持宽高比、不放大原画面，并对齐到编码所需的偶数尺寸。状态还包含实际帧数、经过时间、结束原因、文件大小和错误信息。查询或停止时携带录制 ID，可避免误操作新一段录制。
-
-目前支持具有图形设备的 **macOS / Windows Unity Editor，且必须处于 Play Mode**；暂不录音。画面来自已经渲染的 Game View，包含 Overlay UI，不额外重绘场景相机。录制时保持 Game 标签页渲染，不要改变其分辨率：隐藏、关闭标签页或改变渲染分辨率会结束录制并报错，避免录入旧画面或拉伸画面。退出 Play Mode 会封装视频；脚本重编译或域重载会提前封装，并在编辑器会话中保留 `interrupted` 状态。无论结束原因如何，都以 `ready:true` 为可读取条件。慢帧会保留真实时间戳，但录制本身有开销，不能用于帧精确的性能测量。
-
-## 添加自定义工具
-
-通过简单的 Attribute 标注即可创建自定义工具：
-
-```csharp
-using System.ComponentModel;
-
-[ToolProvider("MyTools")]
-public static class MyCustomTools
-{
-    [Description("Spawns enemies at random positions in the scene")]
-    public static string SpawnEnemies(
-        [ToolParam("Number of enemies to spawn", Required = true)] int count,
-        [ToolParam("Prefab path in Assets")] string prefabPath)
-    {
-        // Your implementation here
-        return $"Spawned {count} enemies";
-    }
-}
-```
-
-方法会被自动发现，名称转换为 snake_case（`spawn_enemies`），并通过 MCP 自动生成 JSON Schema 定义暴露给 AI。
-
-## 架构
-
-```
-MCP Server (HTTP JSON-RPC 2.0)
-    └─ MCPRequestHandler (协议处理)
-        └─ MCPExecutionBridge
-            └─ FunctionInvokerController (反射式调用)
-                └─ Tool Functions (180 个内置工具，42 个模块)
-```
-
-```
-外部 AI 客户端 → HTTP 请求 → MCPRequestHandler → MCPExecutionBridge → FunctionInvokerController → 工具方法
-```
+- 编辑器窗口、菜单、状态提示和文档使用正式中文
+- 工具名称、协议字段、JSON参数和发送给AI的技能内容保留英文，以保证客户端兼容
+- 不提供其他界面语言切换
 
 ## 环境要求
 
-- Unity 2022.3 或更高版本
-- .NET / Mono + `Newtonsoft.Json`
+- Unity 2022.3或更高版本
+- Windows或macOS上的Unity编辑器
+- 工程已安装Newtonsoft.Json和Input System依赖
+- 需要使用MCP的AI客户端，例如Codex、Claude Code、Cursor或其他兼容客户端
 
-## 参与贡献
+## 快速开始
 
-欢迎贡献！提交 PR 前请阅读 [贡献指南](CONTRIBUTING.md)。
+1. 将本文件所在的MaxyMCP文件夹放入工程的Assets/Plugins目录，或通过Unity Package Manager导入本包
+2. 等待Unity完成编译
+3. 在菜单栏打开MaxyMCP > MCP Server
+4. 勾选启用服务器，记下窗口显示的地址和端口
+5. 使用窗口中的客户端配置按钮生成连接配置
+6. 在AI客户端中连接后，先让AI读取编辑器状态，再开始修改工程
+
+服务器只在Unity编辑器运行时提供服务。关闭编辑器、停止服务器或更换端口后，客户端需要重新连接。
+
+## 工具配置
+
+MCP服务器提供三种内置工具分类：
+
+- core：最常用的场景、资源、脚本、编译和运行工具，适合日常使用
+- main：常用工具的完整组合，适合持续开发
+- full：全部已注册工具，适合排查问题、性能分析和高级自动化
+
+工具暴露窗口可以从分类中选择，也可以按分类展开后逐项调整。点击“保存”后配置立即写入当前分类；自定义配置不会自动覆盖其他分类。工具分类只影响AI可以看到的工具，不会删除工具实现。
+
+## 推荐工作流程
+
+1. **读取状态**：使用get_editor_state、get_selection和get_console_logs确认当前工程状态
+2. **准备编辑器**：需要批量操作或截图时先调用prepare_editor
+3. **执行修改**：使用资源、场景、脚本和对象相关工具完成操作
+4. **等待编译**：外部修改C#文件后调用request_recompile，再调用wait_for_compilation
+5. **检查错误**：调用get_compilation_errors和get_console_logs确认没有编译或运行错误
+6. **验证结果**：进入运行模式后使用输入模拟、截图、录制或测试工具验证实际效果
+
+如果工具返回正在执行的任务，使用get_task查询任务状态，不要重复提交相同操作。
+
+## 能力概览
+
+MaxyMCP按模块提供以下能力：
+
+- 场景和游戏对象：创建、查找、移动、组件设置、预制体和PrefabStage操作
+- 资源和脚本：查找、导入、创建、修改、重命名、删除和批量处理
+- 编译和运行：请求重编译、等待编译、读取错误、进入或退出运行模式
+- UI与输入：读取UI层级、模拟键盘鼠标、滚动、点击和拖拽
+- 测试与验证：运行Unity Test Runner、查询任务、读取控制台日志和编辑器状态
+- 截图与录制：捕获Scene或Game视图，录制Game View视频
+- 性能分析：读取帧耗时、性能计数器、内存快照和场景复杂度
+- 编辑器自动化：执行菜单项、管理选择对象、标签、层、构建设置和撤销重做
+
+工具的正式名称和参数以当前MaxyMCP版本实际暴露的列表为准。AI传递工具名称时必须使用英文标识，例如request_recompile；用户界面中会显示中文说明。
+
+## 常用工具示例
+
+### 请求编译并检查错误
+
+~~~json
+{
+  "tool": "request_recompile",
+  "arguments": {}
+}
+~~~
+
+随后调用：
+
+~~~json
+{
+  "tool": "wait_for_compilation",
+  "arguments": {
+    "timeout_seconds": 60
+  }
+}
+~~~
+
+### 读取控制台日志
+
+~~~json
+{
+  "tool": "get_console_logs",
+  "arguments": {
+    "log_type": "all",
+    "limit": 50
+  }
+}
+~~~
+
+## 添加自定义工具
+
+自定义工具使用特性标记公开方法。工具名称会自动转换为snake_case，参数说明会生成到MCP工具定义中：
+
+~~~csharp
+using System.ComponentModel;
+
+[ToolProvider("ProjectTools")]
+public static class ProjectTools
+{
+    [Description("创建指定数量的敌人")]
+    public static string SpawnEnemies(
+        [ToolParam("敌人数量", Required = true)] int count)
+    {
+        return $"已创建{count}个敌人";
+    }
+}
+~~~
+
+工具实现中的协议标识和参数名应保持英文；面向用户的日志、窗口文本和代码注释使用中文。
+
+## 故障排查
+
+- **客户端无法连接**：确认Unity窗口中的服务器已启用，端口没有被占用，并检查客户端配置中的地址是否与窗口一致
+- **工具列表为空**：打开工具暴露窗口，选择正确分类并点击“保存”，然后重新连接客户端
+- **修改后仍有旧结果**：先调用request_recompile和wait_for_compilation，再读取编译错误
+- **运行模式操作失败**：确认Unity处于正确的编辑器状态，并先调用prepare_editor
+- **截图或录制异常**：确保Game View处于可渲染状态，不要在操作过程中关闭或切换目标窗口
+
+## 项目维护
+
+MaxyMCP是本地维护版本。界面和工作流可以按项目需要直接修改，不要求跟随上游版本。第三方依赖和工具协议字段应谨慎升级，并在升级后重新验证客户端连接、编译、截图和运行模式操作。
 
 ## 许可证
 
-[MIT](LICENSE) — 可自由使用、修改、分发，也可集成到商业或开源项目中。
+本项目使用MIT许可证，详见LICENSE。
