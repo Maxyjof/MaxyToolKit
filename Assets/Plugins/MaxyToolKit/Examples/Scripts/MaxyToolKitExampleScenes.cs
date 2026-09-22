@@ -479,6 +479,18 @@ namespace MaxyToolKit.Examples
                 var eventSystemObject = new GameObject("示例事件系统", typeof(EventSystem), typeof(StandaloneInputModule));
                 eventSystemObject.transform.SetParent(parent, false);
             }
+            //示例场景需要相机才能让Unity Game视图正常显示
+            if (Camera.main == null)
+            {
+                var cameraObject = new GameObject("示例相机", typeof(Camera));
+                cameraObject.transform.SetParent(parent, false);
+                cameraObject.tag = "MainCamera";
+                var camera = cameraObject.GetComponent<Camera>();
+                camera.clearFlags = CameraClearFlags.SolidColor;
+                camera.backgroundColor = Background;
+                camera.transform.localPosition = new Vector3(0f, 0f, -10f);
+                camera.transform.localRotation = Quaternion.identity;
+            }
             var canvasObject = new GameObject("示例画布", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             canvasObject.transform.SetParent(parent, false);
             var canvas = canvasObject.GetComponent<Canvas>();
