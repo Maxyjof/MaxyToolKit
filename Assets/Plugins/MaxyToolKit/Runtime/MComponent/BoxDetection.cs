@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace MaxyToolKit.MComponent
 {
@@ -8,13 +7,9 @@ namespace MaxyToolKit.MComponent
     /// </summary>
     public sealed class BoxDetection : MonoBehaviour
     {
-        [FormerlySerializedAs("halfExtents")]
         [SerializeField] private Vector3 _halfExtents = Vector3.one * 0.5f;
-        [FormerlySerializedAs("layerMask")]
         [SerializeField] private LayerMask _layerMask = ~0;
-        [FormerlySerializedAs("triggers")]
         [SerializeField] private QueryTriggerInteraction _triggers = QueryTriggerInteraction.Ignore;
-        [FormerlySerializedAs("bufferSize")]
         [SerializeField] private int _bufferSize = 32;
         private Collider[] _buffer;
 

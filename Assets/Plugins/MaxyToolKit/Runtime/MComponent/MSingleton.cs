@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace MaxyToolKit.MComponent
 {
@@ -15,7 +14,6 @@ namespace MaxyToolKit.MComponent
         /// 获取当前类型的单例实例
         /// </summary>
         public static T Instance { get; private set; }
-        [FormerlySerializedAs("dontDestroyOnLoad")]
         [SerializeField] private bool _dontDestroyOnLoad;
 
         /// <summary>

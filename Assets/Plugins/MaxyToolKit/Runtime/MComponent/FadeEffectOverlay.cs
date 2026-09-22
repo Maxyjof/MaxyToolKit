@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace MaxyToolKit.MComponent
 {
@@ -11,13 +10,9 @@ namespace MaxyToolKit.MComponent
     [RequireComponent(typeof(CanvasGroup))]
     public sealed class FadeEffectOverlay : MonoBehaviour
     {
-        [FormerlySerializedAs("canvasGroup")]
         [SerializeField] private CanvasGroup _canvasGroup;
-        [FormerlySerializedAs("curve")]
         [SerializeField] private AnimationCurve _curve = null;
-        [FormerlySerializedAs("useUnscaledTime")]
         [SerializeField] private bool _useUnscaledTime;
-        [FormerlySerializedAs("blockRaycastsWhenVisible")]
         [SerializeField] private bool _blockRaycastsWhenVisible = true;
         private Coroutine _running;
 

@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace MaxyToolKit.MComponent
 {
@@ -8,19 +7,12 @@ namespace MaxyToolKit.MComponent
     /// </summary>
     public sealed class Follow : MonoBehaviour
     {
-        [FormerlySerializedAs("target")]
         [SerializeField] private Transform _target;
-        [FormerlySerializedAs("followPosition")]
         [SerializeField] private bool _followPosition = true;
-        [FormerlySerializedAs("followRotation")]
         [SerializeField] private bool _followRotation;
-        [FormerlySerializedAs("positionOffset")]
         [SerializeField] private Vector3 _positionOffset;
-        [FormerlySerializedAs("rotationOffset")]
         [SerializeField] private Vector3 _rotationOffset;
-        [FormerlySerializedAs("positionSmoothTime")]
         [SerializeField] private float _positionSmoothTime;
-        [FormerlySerializedAs("rotationSpeed")]
         [SerializeField] private float _rotationSpeed = 12f;
         private Vector3 _velocity;
 
