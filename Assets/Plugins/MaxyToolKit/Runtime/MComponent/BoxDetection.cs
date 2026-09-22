@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace MaxyToolKit.Component
+namespace MaxyToolKit.MComponent
 {
     /// <summary>
     /// 使用盒形范围检测场景中的Collider

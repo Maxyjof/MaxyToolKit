@@ -93,8 +93,8 @@ public sealed class SaveSystem : ISystem
 - `Runtime/Async`：UniTask辅助方法
 - `Runtime/Save`：ES3存档封装
 - `Runtime/Tool`：日志和常用工具
-- `Runtime/Component`：可直接挂载的Unity组件
-- `Runtime/Integration`：第三方库集成扩展
+- `Runtime/MComponent`：可直接挂载的Unity组件
+- `Runtime/Integration`：第三方库集成扩展，具体集成模块使用`M`前缀避免与第三方类型冲突
 - `Editor`：Unity编辑器菜单
 - `Examples`：可直接运行的框架功能示例场景和示例脚本
 - `Docs`：注释规范、迁移说明和教程
@@ -108,8 +108,8 @@ public sealed class SaveSystem : ISystem
 - `MaxyToolKit.Async`：`MTask`
 - `MaxyToolKit.Save`：`MSave`
 - `MaxyToolKit.Tool`：`MTool`和`MLog`
-- `MaxyToolKit.Component`：可挂载的Unity组件
-- `MaxyToolKit.Integration.DOTween`：DOTween集成扩展
+- `MaxyToolKit.MComponent`：可挂载的Unity组件
+- `MaxyToolKit.Integration.MDOTween`：DOTween集成扩展
 
 ## 文档
 

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace MaxyToolKit.Component
+namespace MaxyToolKit.MComponent
 {
     /// <summary>
     /// 仅在正式发布包运行时销毁自身

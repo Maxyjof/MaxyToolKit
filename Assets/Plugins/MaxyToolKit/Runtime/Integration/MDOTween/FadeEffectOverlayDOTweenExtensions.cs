@@ -1,9 +1,9 @@
 using System;
 using DG.Tweening;
 using UnityEngine;
-using MaxyToolKit.Component;
+using MaxyToolKit.MComponent;
 
-namespace MaxyToolKit.Integration.DOTween
+namespace MaxyToolKit.Integration.MDOTween
 {
     /// <summary>
     /// 为FadeEffectOverlay提供DOTween动画扩展

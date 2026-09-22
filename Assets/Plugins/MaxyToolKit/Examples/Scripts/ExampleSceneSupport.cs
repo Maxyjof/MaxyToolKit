@@ -5,7 +5,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using MaxyToolKit.Async;
-using MaxyToolKit.Component;
+using MaxyToolKit.MComponent;
 using MaxyToolKit.Core;
 using MaxyToolKit.Data;
 using MaxyToolKit.Event;
