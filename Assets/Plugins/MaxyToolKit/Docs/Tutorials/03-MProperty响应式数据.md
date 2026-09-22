@@ -2,7 +2,7 @@
 
 ## 单值属性
 
-`MProperty<T>`适合保存会驱动界面或其他逻辑的状态
+`MProperty<T>`用于保存需要驱动界面或业务逻辑的单值状态
 
 ```csharp
 private readonly MProperty<int> coins = new MProperty<int>(0);
@@ -42,7 +42,7 @@ private void RemoveItem(string item)
 }
 ```
 
-回调参数是`IReadOnlyList<T>`，如果要批量修改，使用`BeginBatch`和`EndBatch`
+变化回调接收`IReadOnlyList<T>`。需要连续修改多个元素时，使用`BeginBatch`和`EndBatch`合并通知
 
 ```csharp
 items.BeginBatch();
@@ -55,7 +55,7 @@ items.EndBatch();
 
 ## 字典属性
 
-`MDictionaryProperty<TKey,TValue>`适合保存配置表、状态表或缓存数据
+`MDictionaryProperty<TKey,TValue>`用于保存配置表、状态表或缓存数据
 
 ```csharp
 private readonly MDictionaryProperty<string, int> levels =
@@ -75,4 +75,4 @@ if (levels.TryGetValue("战士", out var level))
 - 需要单个状态时使用`MProperty`
 - 需要有顺序的数据时使用`MListProperty`
 - 需要按键快速查找时使用`MDictionaryProperty`
-- 不要在变化回调中直接修改同一个集合，复杂更新请使用批处理
+- 不要在变化回调中直接修改当前集合，需要连续更新时使用批处理

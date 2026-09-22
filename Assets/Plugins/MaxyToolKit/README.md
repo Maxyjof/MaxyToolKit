@@ -1,12 +1,12 @@
 # MaxyToolKit
 
-MaxyToolKit是面向Unity2022.3.62f3及以上版本、URP和Windows平台的轻量开发工具包
+MaxyToolKit是面向Unity2022.3.62f3及以上版本、URP和Windows平台的实用工具包，提供全局系统、事件总线、响应式数据、异步等待、存档和常用Unity组件
 
-设计目标只有三个：简单易懂、常用够用、复制即可开始使用
+框架以简单、明确和易于复用为原则，不引入大型架构层，功能按模块组织，可按项目需要选用
 
 ## 安装
 
-将整个`MaxyToolKit`文件夹放入Unity工程的`Assets/Plugins`目录，然后等待Unity完成导入
+将整个`MaxyToolKit`文件夹放入Unity工程的`Assets/Plugins`目录，等待Unity完成导入和脚本编译
 
 本目录已经包含以下依赖：
 
@@ -14,7 +14,7 @@ MaxyToolKit是面向Unity2022.3.62f3及以上版本、URP和Windows平台的轻�
 - DOTween：补间动画
 - Easy Save 3：数据存档
 
-如果工程中已经安装这些依赖，请保留一份即可，避免重复导入
+如果工程中已经安装对应依赖，请只保留一份，并确认程序集引用指向同一版本
 
 ## 第一个示例
 
@@ -44,11 +44,11 @@ public sealed class SaveSystem : ISystem
 }
 ```
 
-更多完整示例请查看[教程目录](<Documentation~/Tutorials>)
+完整教程请查看[教程目录](<Docs/Tutorials/README.md>)
 
 ## 示例场景
 
-可运行示例位于[`Examples`](<Examples>)目录，共包含四个场景，分别演示事件总线与全局系统、响应式数据、异步等待与淡入淡出，以及常用工具和DOTween动画。示例界面由运行时脚本创建，便于直接阅读和复制
+可运行示例位于[`Examples`](<Examples>)目录，共包含四个场景，分别演示事件总线与全局系统、响应式数据、异步等待与淡入淡出，以及常用工具和DOTween动画。每个场景由一个示例组件启动，界面在运行时创建，不依赖额外预制体
 
 ## 常用功能
 
@@ -96,14 +96,15 @@ public sealed class SaveSystem : ISystem
 - `Runtime/Integrations`：第三方库集成扩展
 - `Editor`：Unity编辑器菜单
 - `Examples`：可直接运行的框架功能示例场景和示例脚本
-- `Documentation~`：注释规范和教程
+- `Docs`：注释规范、迁移说明和教程
 - `Plugins`：随框架提供的第三方依赖
 
 ## 文档
 
-- [快速开始](<Documentation~/Tutorials/01-快速开始.md>)
-- [事件总线和全局系统](<Documentation~/Tutorials/02-事件总线和全局系统.md>)
-- [MProperty响应式数据](<Documentation~/Tutorials/03-MProperty响应式数据.md>)
-- [异步、动画和存档](<Documentation~/Tutorials/04-异步动画和存档.md>)
-- [常见问题和建议](<Documentation~/Tutorials/05-常见问题和建议.md>)
-- [代码注释规范](<Documentation~/代码注释规范.md>)
+- [快速开始](<Docs/Tutorials/01-快速开始.md>)
+- [事件总线和全局系统](<Docs/Tutorials/02-事件总线和全局系统.md>)
+- [MProperty响应式数据](<Docs/Tutorials/03-MProperty响应式数据.md>)
+- [异步、动画和存档](<Docs/Tutorials/04-异步动画和存档.md>)
+- [常见问题和建议](<Docs/Tutorials/05-常见问题和建议.md>)
+- [代码注释规范](<Docs/代码注释规范.md>)
+- [MFramework迁移说明](<Docs/MFramework迁移说明.md>)
