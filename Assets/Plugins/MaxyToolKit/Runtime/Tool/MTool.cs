@@ -16,7 +16,7 @@ namespace MaxyToolKit.Tool
         /// <typeparam name="T">组件类型</typeparam>
         /// <param name="gameObject">目标GameObject</param>
         /// <returns>已有或新添加的组件，目标为空时返回空</returns>
-        public static T GetOrAdd<T>(this GameObject gameObject) where T : Component
+        public static T GetOrAdd<T>(this GameObject gameObject) where T : UnityEngine.Component
         {
             if (gameObject == null) return null;
             if (gameObject.TryGetComponent<T>(out var component)) return component;

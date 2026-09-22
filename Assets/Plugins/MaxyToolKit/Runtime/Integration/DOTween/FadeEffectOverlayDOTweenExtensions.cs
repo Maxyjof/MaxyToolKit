@@ -32,7 +32,7 @@ namespace MaxyToolKit.Integration.DOTween
         {
             if (overlay == null) throw new ArgumentNullException(nameof(overlay));
             //创建透明度补间并同步交互状态
-            var tween = DOTween.To(
+            var tween = DG.Tweening.DOTween.To(
                 () => overlay.CanvasGroup.alpha,
                 value =>
                 {
