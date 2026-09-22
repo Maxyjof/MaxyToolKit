@@ -46,6 +46,10 @@ public sealed class SaveSystem : ISystem
 
 更多完整示例请查看[教程目录](<Documentation~/Tutorials>)
 
+## 示例场景
+
+可运行示例位于[`Examples`](<Examples>)目录，共包含四个场景，分别演示事件总线与全局系统、响应式数据、异步等待与淡入淡出，以及常用工具和DOTween动画。示例界面由运行时脚本创建，便于直接阅读和复制
+
 ## 常用功能
 
 | 模块 | 主要类型 | 用途 |
@@ -91,6 +95,7 @@ public sealed class SaveSystem : ISystem
 - `Runtime/Components`：可直接挂载的Unity组件
 - `Runtime/Integrations`：第三方库集成扩展
 - `Editor`：Unity编辑器菜单
+- `Examples`：可直接运行的框架功能示例场景和示例脚本
 - `Documentation~`：注释规范和教程
 - `Plugins`：随框架提供的第三方依赖
 
