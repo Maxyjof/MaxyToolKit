@@ -190,7 +190,7 @@ namespace MaxyMCP.UnityMcp.Broker
                     return;
                 }
 
-                var response = "{\"ok\":true,\"name\":\"maxymcp-unity-mcp-broker\",\"protocol\":" +
+                var response = "{\"ok\":true,\"name\":\"maxy-unity-mcp-broker\",\"protocol\":" +
                                ProtocolVersion + ",\"pid\":" + Process.GetCurrentProcess().Id +
                                ",\"pending\":" + GetPendingCount() + "}";
                 WriteResponse(stream, 200, "OK", "application/json", BrokerHeaderLine(), response);

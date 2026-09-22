@@ -211,7 +211,7 @@ NODE
   if [[ "$USE_WRAPPER" == 1 && -n "$WRAPPER_ROOT" && -d "$WRAPPER_ROOT" ]]; then
     info "Bumping wrapper version in $WRAPPER_ROOT"
     run perl -0pi -e "s#<Version>[^<]+</Version>#<Version>$VERSION</Version>#" "$WRAPPER_ROOT/FunseaAI.Unity.Mcp.csproj"
-    run perl -0pi -e "s#maxymcp-unity-mcp [0-9]+\\.[0-9]+\\.[0-9]+(?:[-.][0-9A-Za-z.-]+)?#maxymcp-unity-mcp $VERSION#g" "$WRAPPER_ROOT/Program.cs"
+    run perl -0pi -e "s#(?:maxymcp|maxy)-unity-mcp [0-9]+\\.[0-9]+\\.[0-9]+(?:[-.][0-9A-Za-z.-]+)?#maxy-unity-mcp $VERSION#g" "$WRAPPER_ROOT/Program.cs"
     run node - "$WRAPPER_ROOT/server.json" "$VERSION" <<'NODE'
 const fs = require("fs");
 const path = process.argv[2];

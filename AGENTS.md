@@ -9,8 +9,8 @@ This section is managed by MaxyMCP MCP for Unity. Everything between the begin a
 
 ## Installed project skills
 
-- `maxymcp-unity-mcp-workflow` v1.0.5 - Efficient workflow for using Unity MCP to edit, import, compile, inspect, and test Unity projects, including screenshot and Game View recording verification.
-- `maxymcp-unity-ui-composition` v1.0.6 - Build and revise responsive Unity uGUI mobile interfaces, including portrait and landscape layouts, safe areas, prefabs, auto layout, scrolling, text, input, animation, and performance validation.
+- `maxy-unity-mcp-workflow` v1.0.5 - Efficient workflow for using Unity MCP to edit, import, compile, inspect, and test Unity projects, including screenshot and Game View recording verification.
+- `maxy-unity-ui-composition` v1.0.6 - Build and revise responsive Unity uGUI mobile interfaces, including portrait and landscape layouts, safe areas, prefabs, auto layout, scrolling, text, input, animation, and performance validation.
 
 ## Agent workflow rules
 

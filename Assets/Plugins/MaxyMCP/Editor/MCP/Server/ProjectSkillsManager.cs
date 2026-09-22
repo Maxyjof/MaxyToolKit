@@ -362,7 +362,7 @@ namespace MaxyMCP.Editor.MCP.Server
                 var rulesRoot = GetCursorRulesPath(projectRoot);
                 foreach (var skill in SkillCatalog)
                 {
-                    var path = Path.Combine(rulesRoot, $"maxymcp-{skill.Id}.mdc");
+                    var path = Path.Combine(rulesRoot, $"maxy-{skill.Id}.mdc");
                     if (File.Exists(path) && !IsManagedFile(path))
                         conflicts.Add(path);
                 }
@@ -567,7 +567,7 @@ namespace MaxyMCP.Editor.MCP.Server
 
             foreach (var skill in GetInstalledSkills(manifest))
             {
-                var directory = Path.Combine(skillsRoot, $"maxymcp-{skill.Id}");
+                var directory = Path.Combine(skillsRoot, $"maxy-{skill.Id}");
                 Directory.CreateDirectory(directory);
                 File.WriteAllText(Path.Combine(directory, "SKILL.md"), BuildSkillDocument(skill, platform));
             }
@@ -579,7 +579,7 @@ namespace MaxyMCP.Editor.MCP.Server
 
             foreach (var skill in GetInstalledSkills(manifest))
             {
-                var path = Path.Combine(rulesRoot, $"maxymcp-{skill.Id}.mdc");
+                var path = Path.Combine(rulesRoot, $"maxy-{skill.Id}.mdc");
                 File.WriteAllText(path, BuildCursorRuleContent(skill));
             }
         }
@@ -589,11 +589,14 @@ namespace MaxyMCP.Editor.MCP.Server
             if (!Directory.Exists(skillsRoot))
                 return;
 
-            foreach (var directory in Directory.GetDirectories(skillsRoot, "maxymcp-*", SearchOption.TopDirectoryOnly))
+            foreach (var pattern in new[] { "maxy-*", "maxymcp-*" })
             {
-                var skillPath = Path.Combine(directory, "SKILL.md");
-                if (IsManagedFile(skillPath))
-                    Directory.Delete(directory, true);
+                foreach (var directory in Directory.GetDirectories(skillsRoot, pattern, SearchOption.TopDirectoryOnly))
+                {
+                    var skillPath = Path.Combine(directory, "SKILL.md");
+                    if (IsManagedFile(skillPath))
+                        Directory.Delete(directory, true);
+                }
             }
         }
 
@@ -602,10 +605,13 @@ namespace MaxyMCP.Editor.MCP.Server
             if (!Directory.Exists(rulesRoot))
                 return;
 
-            foreach (var file in Directory.GetFiles(rulesRoot, "maxymcp-*.mdc", SearchOption.TopDirectoryOnly))
+            foreach (var pattern in new[] { "maxy-*.mdc", "maxymcp-*.mdc" })
             {
-                if (IsManagedFile(file))
-                    File.Delete(file);
+                foreach (var file in Directory.GetFiles(rulesRoot, pattern, SearchOption.TopDirectoryOnly))
+                {
+                    if (IsManagedFile(file))
+                        File.Delete(file);
+                }
             }
         }
 
@@ -805,7 +811,7 @@ namespace MaxyMCP.Editor.MCP.Server
                     foreach (var skill in skills)
                     {
                         result.Add(new ExpectedSkillVersionFile(
-                            Path.Combine(GetCodexSkillsRoot(projectRoot), $"maxymcp-{skill.Id}", "SKILL.md"),
+                            Path.Combine(GetCodexSkillsRoot(projectRoot), $"maxy-{skill.Id}", "SKILL.md"),
                             skill.Id,
                             skill.Version,
                             BuildSkillVersionMarker(skill)));
@@ -816,7 +822,7 @@ namespace MaxyMCP.Editor.MCP.Server
                     foreach (var skill in skills)
                     {
                         result.Add(new ExpectedSkillVersionFile(
-                            Path.Combine(GetClaudeSkillsRoot(projectRoot), $"maxymcp-{skill.Id}", "SKILL.md"),
+                            Path.Combine(GetClaudeSkillsRoot(projectRoot), $"maxy-{skill.Id}", "SKILL.md"),
                             skill.Id,
                             skill.Version,
                             BuildSkillVersionMarker(skill)));
@@ -826,7 +832,7 @@ namespace MaxyMCP.Editor.MCP.Server
                     foreach (var skill in skills)
                     {
                         result.Add(new ExpectedSkillVersionFile(
-                            Path.Combine(GetCursorRulesPath(projectRoot), $"maxymcp-{skill.Id}.mdc"),
+                            Path.Combine(GetCursorRulesPath(projectRoot), $"maxy-{skill.Id}.mdc"),
                             skill.Id,
                             skill.Version,
                             BuildSkillVersionMarker(skill)));
@@ -837,7 +843,7 @@ namespace MaxyMCP.Editor.MCP.Server
                     foreach (var skill in skills)
                     {
                         result.Add(new ExpectedSkillVersionFile(
-                            Path.Combine(GetOpenCodeSkillsRoot(projectRoot), $"maxymcp-{skill.Id}", "SKILL.md"),
+                            Path.Combine(GetOpenCodeSkillsRoot(projectRoot), $"maxy-{skill.Id}", "SKILL.md"),
                             skill.Id,
                             skill.Version,
                             BuildSkillVersionMarker(skill)));
@@ -848,7 +854,7 @@ namespace MaxyMCP.Editor.MCP.Server
                     foreach (var skill in skills)
                     {
                         result.Add(new ExpectedSkillVersionFile(
-                            Path.Combine(GetDshSkillsRoot(projectRoot), $"maxymcp-{skill.Id}", "SKILL.md"),
+                            Path.Combine(GetDshSkillsRoot(projectRoot), $"maxy-{skill.Id}", "SKILL.md"),
                             skill.Id,
                             skill.Version,
                             BuildSkillVersionMarker(skill)));
@@ -859,7 +865,7 @@ namespace MaxyMCP.Editor.MCP.Server
                     foreach (var skill in skills)
                     {
                         result.Add(new ExpectedSkillVersionFile(
-                            Path.Combine(GetAntigravitySkillsRoot(projectRoot), $"maxymcp-{skill.Id}", "SKILL.md"),
+                            Path.Combine(GetAntigravitySkillsRoot(projectRoot), $"maxy-{skill.Id}", "SKILL.md"),
                             skill.Id,
                             skill.Version,
                             BuildSkillVersionMarker(skill)));
@@ -1018,7 +1024,7 @@ $@"{ManagedMarker}
 
 ## Installed project skills
 
-{string.Join("\n", installed.Select(skill => $"- `maxymcp-{skill.Id}` v{skill.Version} - {skill.Description}"))}
+{string.Join("\n", installed.Select(skill => $"- `maxy-{skill.Id}` v{skill.Version} - {skill.Description}"))}
 
 ## Agent workflow rules
 
@@ -1252,7 +1258,7 @@ version: {skill.Version}
 
             return
 $@"---
-name: maxymcp-{skill.Id}
+name: maxy-{skill.Id}
 description: {skill.Description}
 ---
 {ManagedMarker}
@@ -1279,7 +1285,7 @@ description: {skill.Description}
         {
             return
 $@"---
-name: maxymcp-{skill.Id}
+name: maxy-{skill.Id}
 description: {skill.Description}
 ---
 {ManagedMarker}
@@ -1549,7 +1555,7 @@ Use `capture_game_view` for static layout or a single visual state. Use `record_
         {
             var header =
 $@"---
-name: maxymcp-{skill.Id}
+name: maxy-{skill.Id}
 description: {skill.Description}
 ---
 {ManagedMarker}

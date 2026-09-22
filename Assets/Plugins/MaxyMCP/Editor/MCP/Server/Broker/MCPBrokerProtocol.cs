@@ -12,7 +12,7 @@ namespace MaxyMCP.Editor.MCP.Server
         //     after a package upgrade fails the health probe and is replaced by the new one
         //     (see MCPBrokerProcessManager.EnsureRunning's upgrade-cleanup path).
         public const int Version = 3;
-        public const string Name = "maxymcp-unity-mcp-broker";
+        public const string Name = "maxy-unity-mcp-broker";
         public const string HealthPath = "/_maxymcp/broker/health";
         public const string AttachPath = "/_maxymcp/broker/attach";
         public const string PullPath = "/_maxymcp/broker/pull";
