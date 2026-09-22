@@ -75,11 +75,11 @@ namespace MaxyToolKit.Examples
     /// </summary>
     public class EventBusExampleSceneLogic : MonoBehaviour
     {
-        private ExampleCounterSystem system;
-        private IDisposable subscription;
-        private Text statusText;
-        private Text eventText;
-        private int publishedCount;
+        private ExampleCounterSystem _system;
+        private IDisposable _subscription;
+        private Text _statusText;
+        private Text _eventText;
+        private int _publishedCount;
 
         /// <summary>
         /// 创建界面并注册示例系统
@@ -87,14 +87,14 @@ namespace MaxyToolKit.Examples
         protected void InitializeExample()
         {
             var uiRoot = ExampleUiFactory.CreateHeader(transform, "示例一：事件总线与全局系统", "用一条消息连接界面和全局系统");
-            statusText = ExampleUiFactory.CreateText(uiRoot, "系统状态：准备中", 24, ExampleUiFactory.SecondaryText);
-            eventText = ExampleUiFactory.CreateText(uiRoot, "已发布事件：0\n系统收到事件：0", 28, Color.white);
+            _statusText = ExampleUiFactory.CreateText(uiRoot, "系统状态：准备中", 24, ExampleUiFactory.SecondaryText);
+            _eventText = ExampleUiFactory.CreateText(uiRoot, "已发布事件：0\n系统收到事件：0", 28, Color.white);
             ExampleUiFactory.CreateText(uiRoot, "点击按钮后，界面发布ExamplePingEvent，系统通过MEventBus收到消息", 18, ExampleUiFactory.SecondaryText);
             ExampleUiFactory.CreateButton(uiRoot, "发布一条事件", PublishEvent);
             ExampleUiFactory.CreateButton(uiRoot, "重置系统中心", ResetSystem);
 
-            system = MSystemCenter.Register(new ExampleCounterSystem(), true);
-            subscription = MEventBus.Global.Subscribe<ExamplePingEvent>(OnEventReceived);
+            _system = MSystemCenter.Register(new ExampleCounterSystem(), true);
+            _subscription = MEventBus.Global.Subscribe<ExamplePingEvent>(OnEventReceived);
             UpdateView();
         }
 
@@ -103,8 +103,8 @@ namespace MaxyToolKit.Examples
         /// </summary>
         private void PublishEvent()
         {
-            publishedCount++;
-            MEventBus.Global.Publish(new ExamplePingEvent(publishedCount));
+            _publishedCount++;
+            MEventBus.Global.Publish(new ExamplePingEvent(_publishedCount));
             UpdateView();
         }
 
@@ -114,7 +114,7 @@ namespace MaxyToolKit.Examples
         /// <param name="message">收到的示例消息</param>
         private void OnEventReceived(ExamplePingEvent message)
         {
-            if (system != null) system.Record(message);
+            if (_system != null) _system.Record(message);
             UpdateView();
         }
 
@@ -124,10 +124,10 @@ namespace MaxyToolKit.Examples
         private void ResetSystem()
         {
             MSystemCenter.Reset();
-            system = MSystemCenter.Register(new ExampleCounterSystem(), true);
-            subscription?.Dispose();
-            subscription = MEventBus.Global.Subscribe<ExamplePingEvent>(OnEventReceived);
-            publishedCount = 0;
+            _system = MSystemCenter.Register(new ExampleCounterSystem(), true);
+            _subscription?.Dispose();
+            _subscription = MEventBus.Global.Subscribe<ExamplePingEvent>(OnEventReceived);
+            _publishedCount = 0;
             UpdateView();
         }
 
@@ -136,9 +136,9 @@ namespace MaxyToolKit.Examples
         /// </summary>
         private void UpdateView()
         {
-            var initialized = system != null && system.IsInitialized;
-            statusText.text = "系统状态：" + (initialized ? "已初始化" : "已重置");
-            eventText.text = $"已发布事件：{publishedCount}\n系统收到事件：{(system == null ? 0 : system.EventCount)}";
+            var initialized = _system != null && _system.IsInitialized;
+            _statusText.text = "系统状态：" + (initialized ? "已初始化" : "已重置");
+            _eventText.text = $"已发布事件：{_publishedCount}\n系统收到事件：{(_system == null ? 0 : _system.EventCount)}";
         }
 
         /// <summary>
@@ -146,8 +146,8 @@ namespace MaxyToolKit.Examples
         /// </summary>
         protected void CleanupExample()
         {
-            subscription?.Dispose();
-            if (system != null && MSystemCenter.Get<ExampleCounterSystem>() == system) MSystemCenter.Remove<ExampleCounterSystem>();
+            _subscription?.Dispose();
+            if (_system != null && MSystemCenter.Get<ExampleCounterSystem>() == _system) MSystemCenter.Remove<ExampleCounterSystem>();
         }
     }
 
@@ -156,16 +156,16 @@ namespace MaxyToolKit.Examples
     /// </summary>
     public class PropertyExampleSceneLogic : MonoBehaviour
     {
-        private readonly MProperty<int> score = new MProperty<int>(25);
-        private readonly MListProperty<string> inventory = new MListProperty<string>(new[] { "钥匙", "地图" });
-        private readonly MDictionaryProperty<string, int> itemCounts = new MDictionaryProperty<string, int>();
-        private readonly List<IDisposable> subscriptions = new List<IDisposable>();
-        private Text valueText;
-        private Text listText;
-        private Text dictionaryText;
-        private Text storageText;
-        private Slider slider;
-        private int addedItemIndex;
+        private readonly MProperty<int> _score = new MProperty<int>(25);
+        private readonly MListProperty<string> _inventory = new MListProperty<string>(new[] { "钥匙", "地图" });
+        private readonly MDictionaryProperty<string, int> _itemCounts = new MDictionaryProperty<string, int>();
+        private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
+        private Text _valueText;
+        private Text _listText;
+        private Text _dictionaryText;
+        private Text _storageText;
+        private Slider _slider;
+        private int _addedItemIndex;
 
         /// <summary>
         /// 创建响应式数据示例界面
@@ -173,20 +173,20 @@ namespace MaxyToolKit.Examples
         protected void InitializeExample()
         {
             var uiRoot = ExampleUiFactory.CreateHeader(transform, "示例二：MProperty响应式数据", "值变化时自动通知界面，集合变化时同步刷新");
-            valueText = ExampleUiFactory.CreateText(uiRoot, "分数：25", 28, Color.white);
-            slider = ExampleUiFactory.CreateSlider(uiRoot, 0f, 100f, score.Value, value => score.Value = Mathf.RoundToInt(value));
-            listText = ExampleUiFactory.CreateText(uiRoot, "列表：", 20, ExampleUiFactory.SecondaryText);
-            dictionaryText = ExampleUiFactory.CreateText(uiRoot, "字典：", 20, ExampleUiFactory.SecondaryText);
-            storageText = ExampleUiFactory.CreateText(uiRoot, "存档：尚未操作", 18, ExampleUiFactory.SecondaryText);
+            _valueText = ExampleUiFactory.CreateText(uiRoot, "分数：25", 28, Color.white);
+            _slider = ExampleUiFactory.CreateSlider(uiRoot, 0f, 100f, _score.Value, value => _score.Value = Mathf.RoundToInt(value));
+            _listText = ExampleUiFactory.CreateText(uiRoot, "列表：", 20, ExampleUiFactory.SecondaryText);
+            _dictionaryText = ExampleUiFactory.CreateText(uiRoot, "字典：", 20, ExampleUiFactory.SecondaryText);
+            _storageText = ExampleUiFactory.CreateText(uiRoot, "存档：尚未操作", 18, ExampleUiFactory.SecondaryText);
             ExampleUiFactory.CreateButton(uiRoot, "添加一个列表元素", AddInventoryItem);
             ExampleUiFactory.CreateButton(uiRoot, "保存到ES3", SaveData);
             ExampleUiFactory.CreateButton(uiRoot, "从ES3读取", LoadData);
 
-            itemCounts.Add("钥匙", 1);
-            itemCounts.Add("地图", 1);
-            subscriptions.Add(score.Subscribe(UpdateScore, true));
-            subscriptions.Add(inventory.Subscribe(UpdateInventory, true));
-            subscriptions.Add(itemCounts.Subscribe(UpdateDictionary, true));
+            _itemCounts.Add("钥匙", 1);
+            _itemCounts.Add("地图", 1);
+            _subscriptions.Add(_score.Subscribe(UpdateScore, true));
+            _subscriptions.Add(_inventory.Subscribe(UpdateInventory, true));
+            _subscriptions.Add(_itemCounts.Subscribe(UpdateDictionary, true));
         }
 
         /// <summary>
@@ -195,31 +195,31 @@ namespace MaxyToolKit.Examples
         /// <param name="value">当前分数</param>
         private void UpdateScore(int value)
         {
-            valueText.text = "分数：" + value;
-            if (slider != null && !Mathf.Approximately(slider.value, value)) slider.SetValueWithoutNotify(value);
+            _valueText.text = "分数：" + value;
+            if (_slider != null && !Mathf.Approximately(_slider.value, value)) _slider.SetValueWithoutNotify(value);
         }
 
         /// <summary>
         /// 更新列表显示
         /// </summary>
         /// <param name="values">当前列表</param>
-        private void UpdateInventory(IReadOnlyList<string> values) => listText.text = "列表：" + string.Join("、", values);
+        private void UpdateInventory(IReadOnlyList<string> values) => _listText.text = "列表：" + string.Join("、", values);
 
         /// <summary>
         /// 更新字典显示
         /// </summary>
         /// <param name="values">当前字典</param>
-        private void UpdateDictionary(IReadOnlyDictionary<string, int> values) => dictionaryText.text = "字典：" + string.Join("，", values.Select(pair => pair.Key + "=" + pair.Value));
+        private void UpdateDictionary(IReadOnlyDictionary<string, int> values) => _dictionaryText.text = "字典：" + string.Join("，", values.Select(pair => pair.Key + "=" + pair.Value));
 
         /// <summary>
         /// 添加列表和字典数据
         /// </summary>
         private void AddInventoryItem()
         {
-            addedItemIndex++;
-            var itemName = "道具" + addedItemIndex;
-            inventory.Add(itemName);
-            itemCounts[itemName] = 1;
+            _addedItemIndex++;
+            var itemName = "道具" + _addedItemIndex;
+            _inventory.Add(itemName);
+            _itemCounts[itemName] = 1;
         }
 
         /// <summary>
@@ -229,13 +229,13 @@ namespace MaxyToolKit.Examples
         {
             try
             {
-                MSave.Save("MaxyToolKit.Example.Score", score.Value);
-                MSave.Save("MaxyToolKit.Example.Inventory", inventory.ToList());
-                storageText.text = "存档：已保存";
+                MSave.Save("MaxyToolKit.Example.Score", _score.Value);
+                MSave.Save("MaxyToolKit.Example.Inventory", _inventory.ToList());
+                _storageText.text = "存档：已保存";
             }
             catch (Exception exception)
             {
-                storageText.text = "存档：保存失败 " + exception.Message;
+                _storageText.text = "存档：保存失败 " + exception.Message;
             }
         }
 
@@ -246,15 +246,15 @@ namespace MaxyToolKit.Examples
         {
             try
             {
-                score.Value = MSave.Load("MaxyToolKit.Example.Score", score.Value);
-                inventory.ReplaceSilently(MSave.Load("MaxyToolKit.Example.Inventory", inventory.ToList()));
-                inventory.AddRange(Array.Empty<string>());
-                storageText.text = "存档：已读取";
-                UpdateInventory(inventory.ToList());
+                _score.Value = MSave.Load("MaxyToolKit.Example.Score", _score.Value);
+                _inventory.ReplaceSilently(MSave.Load("MaxyToolKit.Example.Inventory", _inventory.ToList()));
+                _inventory.AddRange(Array.Empty<string>());
+                _storageText.text = "存档：已读取";
+                UpdateInventory(_inventory.ToList());
             }
             catch (Exception exception)
             {
-                storageText.text = "存档：读取失败 " + exception.Message;
+                _storageText.text = "存档：读取失败 " + exception.Message;
             }
         }
 
@@ -263,8 +263,8 @@ namespace MaxyToolKit.Examples
         /// </summary>
         protected void CleanupExample()
         {
-            foreach (var subscription in subscriptions) subscription?.Dispose();
-            subscriptions.Clear();
+            foreach (var _subscription in _subscriptions) _subscription?.Dispose();
+            _subscriptions.Clear();
         }
     }
 
@@ -273,10 +273,10 @@ namespace MaxyToolKit.Examples
     /// </summary>
     public class AsyncExampleSceneLogic : MonoBehaviour
     {
-        private CancellationTokenSource cancellation;
-        private Text statusText;
-        private Image progressFill;
-        private FadeEffectOverlay overlay;
+        private CancellationTokenSource _cancellation;
+        private Text _statusText;
+        private Image _progressFill;
+        private FadeEffectOverlay _overlay;
 
         /// <summary>
         /// 创建异步任务示例界面
@@ -284,14 +284,14 @@ namespace MaxyToolKit.Examples
         protected void InitializeExample()
         {
             var uiRoot = ExampleUiFactory.CreateHeader(transform, "示例三：异步等待与淡入淡出", "MTask负责等待，FadeEffectOverlay负责界面过渡");
-            statusText = ExampleUiFactory.CreateText(uiRoot, "状态：等待开始", 24, Color.white);
-            progressFill = ExampleUiFactory.CreateProgressBar(uiRoot);
+            _statusText = ExampleUiFactory.CreateText(uiRoot, "状态：等待开始", 24, Color.white);
+            _progressFill = ExampleUiFactory.CreateProgressBar(uiRoot);
             ExampleUiFactory.CreateButton(uiRoot, "开始异步流程", StartFlow);
             ExampleUiFactory.CreateButton(uiRoot, "显示或隐藏遮罩", ToggleOverlay);
 
             var overlayObject = ExampleUiFactory.CreateOverlay(uiRoot.parent);
-            overlay = overlayObject.AddComponent<FadeEffectOverlay>();
-            overlay.SetImmediate(0f);
+            _overlay = overlayObject.AddComponent<FadeEffectOverlay>();
+            _overlay.SetImmediate(0f);
         }
 
         /// <summary>
@@ -299,10 +299,10 @@ namespace MaxyToolKit.Examples
         /// </summary>
         private void StartFlow()
         {
-            cancellation?.Cancel();
-            cancellation?.Dispose();
-            cancellation = new CancellationTokenSource();
-            RunFlowAsync(cancellation.Token).Forget();
+            _cancellation?.Cancel();
+            _cancellation?.Dispose();
+            _cancellation = new CancellationTokenSource();
+            RunFlowAsync(_cancellation.Token).Forget();
         }
 
         /// <summary>
@@ -315,21 +315,21 @@ namespace MaxyToolKit.Examples
             {
                 for (var index = 1; index <= 5; index++)
                 {
-                    statusText.text = $"状态：正在执行第{index}阶段";
-                    progressFill.fillAmount = (index - 1) / 5f;
+                    _statusText.text = $"状态：正在执行第{index}阶段";
+                    _progressFill.fillAmount = (index - 1) / 5f;
                     await MTask.Delay(0.5f, true, token);
                 }
 
-                progressFill.fillAmount = 1f;
-                statusText.text = "状态：异步流程完成";
+                _progressFill.fillAmount = 1f;
+                _statusText.text = "状态：异步流程完成";
                 await MTask.Delay(0.2f, true, token);
-                overlay.FadeIn(0.2f);
+                _overlay.FadeIn(0.2f);
                 await MTask.Delay(0.8f, true, token);
-                overlay.FadeOut(0.3f);
+                _overlay.FadeOut(0.3f);
             }
             catch (OperationCanceledException)
             {
-                statusText.text = "状态：流程已取消";
+                _statusText.text = "状态：流程已取消";
             }
         }
 
@@ -338,8 +338,8 @@ namespace MaxyToolKit.Examples
         /// </summary>
         private void ToggleOverlay()
         {
-            if (overlay.CanvasGroup.alpha > 0.01f) overlay.FadeOut();
-            else overlay.FadeIn();
+            if (_overlay.CanvasGroup.alpha > 0.01f) _overlay.FadeOut();
+            else _overlay.FadeIn();
         }
 
         /// <summary>
@@ -347,8 +347,8 @@ namespace MaxyToolKit.Examples
         /// </summary>
         protected void CleanupExample()
         {
-            cancellation?.Cancel();
-            cancellation?.Dispose();
+            _cancellation?.Cancel();
+            _cancellation?.Dispose();
         }
     }
 
@@ -357,12 +357,12 @@ namespace MaxyToolKit.Examples
     /// </summary>
     public class ToolsExampleSceneLogic : MonoBehaviour
     {
-        private GameObject cube;
-        private GameObject cameraObject;
-        private RectTransform previewRect;
-        private Text positionText;
-        private Text utilityText;
-        private int moveCount;
+        private GameObject _cube;
+        private GameObject _cameraObject;
+        private RectTransform _previewRect;
+        private Text _positionText;
+        private Text _utilityText;
+        private int _moveCount;
 
         /// <summary>
         /// 创建工具示例界面和可操作立方体
@@ -372,19 +372,19 @@ namespace MaxyToolKit.Examples
             var uiRoot = ExampleUiFactory.CreateHeader(transform, "示例四：常用工具与动画", "MTool处理对象和数值，DOTween负责轻量动画");
             var background = uiRoot.Find("背景")?.GetComponent<Image>();
             if (background != null) background.color = new Color(ExampleUiFactory.Background.r, ExampleUiFactory.Background.g, ExampleUiFactory.Background.b, 0.35f);
-            positionText = ExampleUiFactory.CreateText(uiRoot, "位置：", 24, Color.white);
-            utilityText = ExampleUiFactory.CreateText(uiRoot, "工具：等待操作", 18, ExampleUiFactory.SecondaryText);
+            _positionText = ExampleUiFactory.CreateText(uiRoot, "位置：", 24, Color.white);
+            _utilityText = ExampleUiFactory.CreateText(uiRoot, "工具：等待操作", 18, ExampleUiFactory.SecondaryText);
             ExampleUiFactory.CreateButton(uiRoot, "随机移动并旋转", MoveObject);
             ExampleUiFactory.CreateButton(uiRoot, "重置对象", ResetObject);
 
             CreateExampleCamera();
-            previewRect = ExampleUiFactory.CreateObjectPreview(uiRoot.parent);
+            _previewRect = ExampleUiFactory.CreateObjectPreview(uiRoot.parent);
 
-            cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            cube.name = "MTool示例立方体";
-            cube.transform.SetParent(transform, false);
-            cube.transform.position = new Vector3(0f, -1.2f, 4f);
-            cube.transform.localScale = Vector3.one * 1.2f;
+            _cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            _cube.name = "MTool示例立方体";
+            _cube.transform.SetParent(transform, false);
+            _cube.transform.position = new Vector3(0f, -1.2f, 4f);
+            _cube.transform.localScale = Vector3.one * 1.2f;
             UpdatePosition();
         }
 
@@ -394,8 +394,8 @@ namespace MaxyToolKit.Examples
         private void CreateExampleCamera()
         {
             if (Camera.main != null) return;
-            cameraObject = new GameObject("示例相机");
-            var camera = cameraObject.AddComponent<Camera>();
+            _cameraObject = new GameObject("示例相机");
+            var camera = _cameraObject.AddComponent<Camera>();
             camera.tag = "MainCamera";
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.backgroundColor = ExampleUiFactory.Background;
@@ -408,20 +408,20 @@ namespace MaxyToolKit.Examples
         /// </summary>
         private void MoveObject()
         {
-            if (cube == null) return;
-            moveCount++;
-            var x = MTool.Remap(Mathf.Sin(moveCount * 1.3f), -1f, 1f, -2.3f, 2.3f);
+            if (_cube == null) return;
+            _moveCount++;
+            var x = MTool.Remap(Mathf.Sin(_moveCount * 1.3f), -1f, 1f, -2.3f, 2.3f);
             var target = new Vector3(x, -1.2f, 4f);
-            cube.transform.DOKill();
-            cube.transform.DOMove(target, 0.45f).SetEase(Ease.OutBack);
-            cube.transform.DORotate(new Vector3(0f, 180f, 0f), 0.45f, RotateMode.WorldAxisAdd);
-            if (previewRect != null)
+            _cube.transform.DOKill();
+            _cube.transform.DOMove(target, 0.45f).SetEase(Ease.OutBack);
+            _cube.transform.DORotate(new Vector3(0f, 180f, 0f), 0.45f, RotateMode.WorldAxisAdd);
+            if (_previewRect != null)
             {
-                previewRect.DOKill();
-                previewRect.DOAnchorPos(new Vector2(x * 95f, 180f), 0.45f).SetEase(Ease.OutBack);
-                previewRect.DORotate(new Vector3(0f, 0f, 180f), 0.45f, RotateMode.WorldAxisAdd);
+                _previewRect.DOKill();
+                _previewRect.DOAnchorPos(new Vector2(x * 95f, 180f), 0.45f).SetEase(Ease.OutBack);
+                _previewRect.DORotate(new Vector3(0f, 0f, 180f), 0.45f, RotateMode.WorldAxisAdd);
             }
-            utilityText.text = "工具：使用MTool.Remap计算位置，并用DOTween播放动画";
+            _utilityText.text = "工具：使用MTool.Remap计算位置，并用DOTween播放动画";
             UpdatePosition();
         }
 
@@ -430,16 +430,16 @@ namespace MaxyToolKit.Examples
         /// </summary>
         private void ResetObject()
         {
-            if (cube == null) return;
-            cube.transform.DOKill();
-            cube.transform.SetPositionAndRotation(new Vector3(0f, -1.2f, 4f), Quaternion.identity);
-            if (previewRect != null)
+            if (_cube == null) return;
+            _cube.transform.DOKill();
+            _cube.transform.SetPositionAndRotation(new Vector3(0f, -1.2f, 4f), Quaternion.identity);
+            if (_previewRect != null)
             {
-                previewRect.DOKill();
-                previewRect.anchoredPosition = new Vector2(0f, 180f);
-                previewRect.localRotation = Quaternion.identity;
+                _previewRect.DOKill();
+                _previewRect.anchoredPosition = new Vector2(0f, 180f);
+                _previewRect.localRotation = Quaternion.identity;
             }
-            utilityText.text = "工具：Transform已恢复初始状态";
+            _utilityText.text = "工具：Transform已恢复初始状态";
             UpdatePosition();
         }
 
@@ -448,7 +448,7 @@ namespace MaxyToolKit.Examples
         /// </summary>
         private void UpdatePosition()
         {
-            if (cube != null) positionText.text = $"位置：{cube.transform.position}";
+            if (_cube != null) _positionText.text = $"位置：{_cube.transform.position}";
         }
 
         /// <summary>
@@ -456,9 +456,9 @@ namespace MaxyToolKit.Examples
         /// </summary>
         protected void CleanupExample()
         {
-            if (cube != null) cube.transform.DOKill();
-            if (previewRect != null) previewRect.DOKill();
-            if (cameraObject != null) Destroy(cameraObject);
+            if (_cube != null) _cube.transform.DOKill();
+            if (_previewRect != null) _previewRect.DOKill();
+            if (_cameraObject != null) Destroy(_cameraObject);
         }
     }
 
@@ -488,10 +488,10 @@ namespace MaxyToolKit.Examples
             //示例场景需要相机才能让Unity Game视图正常显示
             if (Camera.main == null)
             {
-                var cameraObject = new GameObject("示例相机", typeof(Camera));
-                cameraObject.transform.SetParent(parent, false);
-                cameraObject.tag = "MainCamera";
-                var camera = cameraObject.GetComponent<Camera>();
+                var _cameraObject = new GameObject("示例相机", typeof(Camera));
+                _cameraObject.transform.SetParent(parent, false);
+                _cameraObject.tag = "MainCamera";
+                var camera = _cameraObject.GetComponent<Camera>();
                 camera.clearFlags = CameraClearFlags.SolidColor;
                 camera.backgroundColor = Background;
                 camera.transform.localPosition = new Vector3(0f, 0f, -10f);
@@ -637,15 +637,15 @@ namespace MaxyToolKit.Examples
             handle.anchorMin = new Vector2(0f, 0f);
             handle.anchorMax = new Vector2(0f, 1f);
             handle.sizeDelta = new Vector2(26f, 26f);
-            var slider = sliderObject.GetComponent<Slider>();
-            slider.minValue = min;
-            slider.maxValue = max;
-            slider.value = value;
-            slider.fillRect = fill;
-            slider.handleRect = handle;
-            slider.targetGraphic = handle.GetComponent<Image>();
-            slider.onValueChanged.AddListener(onChanged);
-            return slider;
+            var _slider = sliderObject.GetComponent<Slider>();
+            _slider.minValue = min;
+            _slider.maxValue = max;
+            _slider.value = value;
+            _slider.fillRect = fill;
+            _slider.handleRect = handle;
+            _slider.targetGraphic = handle.GetComponent<Image>();
+            _slider.onValueChanged.AddListener(onChanged);
+            return _slider;
         }
 
         /// <summary>
@@ -695,16 +695,16 @@ namespace MaxyToolKit.Examples
         /// <returns>遮罩对象</returns>
         public static GameObject CreateOverlay(Transform parent)
         {
-            var overlay = new GameObject("淡入淡出遮罩", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
-            overlay.transform.SetParent(parent, false);
-            var rect = overlay.GetComponent<RectTransform>();
+            var _overlay = new GameObject("淡入淡出遮罩", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
+            _overlay.transform.SetParent(parent, false);
+            var rect = _overlay.GetComponent<RectTransform>();
             rect.anchorMin = Vector2.zero;
             rect.anchorMax = Vector2.one;
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
-            overlay.GetComponent<Image>().color = Color.black;
-            overlay.transform.SetAsLastSibling();
-            return overlay;
+            _overlay.GetComponent<Image>().color = Color.black;
+            _overlay.transform.SetAsLastSibling();
+            return _overlay;
         }
 
         /// <summary>

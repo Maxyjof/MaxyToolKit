@@ -13,8 +13,8 @@ namespace MaxyToolKit.Core
     /// </remarks>
     public static class MSystemCenter
     {
-        private static readonly Dictionary<Type, object> Systems = new Dictionary<Type, object>();
-        private static readonly List<object> Order = new List<object>();
+        private static readonly Dictionary<Type, object> _systems = new Dictionary<Type, object>();
+        private static readonly List<object> _order = new List<object>();
 
         /// <summary>
         /// 注册系统并执行其初始化逻辑
@@ -36,15 +36,15 @@ namespace MaxyToolKit.Core
             //验证实例并处理同类型系统
             if (system == null) throw new ArgumentNullException(nameof(system));
             var type = typeof(T);
-            if (Systems.ContainsKey(type))
+            if (_systems.ContainsKey(type))
             {
                 if (!replace) throw new InvalidOperationException("System already registered: " + type.FullName);
                 Remove<T>();
             }
 
             //记录系统并按注册顺序保存
-            Systems.Add(type, system);
-            Order.Add(system);
+            _systems.Add(type, system);
+            _order.Add(system);
             if (system is ISystem lifecycle) lifecycle.Initialize();
             return system;
         }
@@ -77,7 +77,7 @@ namespace MaxyToolKit.Core
         /// </returns>
         public static bool TryGet<T>(out T value) where T : class
         {
-            if (Systems.TryGetValue(typeof(T), out var system))
+            if (_systems.TryGetValue(typeof(T), out var system))
             {
                 value = system as T;
                 return value != null;
@@ -96,7 +96,7 @@ namespace MaxyToolKit.Core
         /// <returns>
         /// 已注册时返回true，否则返回false
         /// </returns>
-        public static bool Contains<T>() where T : class => Systems.ContainsKey(typeof(T));
+        public static bool Contains<T>() where T : class => _systems.ContainsKey(typeof(T));
 
         /// <summary>
         /// 移除指定类型的系统并执行关闭逻辑
@@ -109,11 +109,11 @@ namespace MaxyToolKit.Core
         /// </returns>
         public static bool Remove<T>() where T : class
         {
-            if (!Systems.TryGetValue(typeof(T), out var system)) return false;
+            if (!_systems.TryGetValue(typeof(T), out var system)) return false;
             //先关闭系统再移除注册记录
             if (system is ISystem lifecycle) lifecycle.Shutdown();
-            Systems.Remove(typeof(T));
-            Order.Remove(system);
+            _systems.Remove(typeof(T));
+            _order.Remove(system);
             return true;
         }
 
@@ -123,9 +123,9 @@ namespace MaxyToolKit.Core
         public static void Reset()
         {
             //按注册逆序关闭系统，保证依赖关系安全
-            for (var i = Order.Count - 1; i >= 0; i--)
+            for (var i = _order.Count - 1; i >= 0; i--)
             {
-                if (Order[i] is ISystem lifecycle)
+                if (_order[i] is ISystem lifecycle)
                 {
                     try { lifecycle.Shutdown(); }
                     catch (Exception exception) { Debug.LogException(exception); }
@@ -133,8 +133,8 @@ namespace MaxyToolKit.Core
             }
 
             //清理系统索引和全局事件
-            Order.Clear();
-            Systems.Clear();
+            _order.Clear();
+            _systems.Clear();
             MEventBus.Global.Clear();
         }
 

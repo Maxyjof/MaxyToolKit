@@ -8,7 +8,7 @@ namespace MaxyToolKit.Event
     /// </summary>
     public sealed class MSubscriptionBag : IDisposable
     {
-        private readonly List<IDisposable> subscriptions = new List<IDisposable>();
+        private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
 
         /// <summary>
         /// 添加订阅并返回原对象
@@ -24,7 +24,7 @@ namespace MaxyToolKit.Event
         /// </returns>
         public T Add<T>(T subscription) where T : IDisposable
         {
-            if (subscription != null) subscriptions.Add(subscription);
+            if (subscription != null) _subscriptions.Add(subscription);
             return subscription;
         }
 
@@ -33,8 +33,8 @@ namespace MaxyToolKit.Event
         /// </summary>
         public void Dispose()
         {
-            for (var i = subscriptions.Count - 1; i >= 0; i--) subscriptions[i].Dispose();
-            subscriptions.Clear();
+            for (var i = _subscriptions.Count - 1; i >= 0; i--) _subscriptions[i].Dispose();
+            _subscriptions.Clear();
         }
     }
 }

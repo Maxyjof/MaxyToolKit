@@ -12,10 +12,10 @@ namespace MaxyToolKit.Data
     /// </typeparam>
     public sealed class MProperty<T>
     {
-        private T value;
-        private int batchDepth;
-        private bool dirty;
-        private event Action<T> changed;
+        private T _value;
+        private int _batchDepth;
+        private bool _dirty;
+        private event Action<T> _changed;
 
         /// <summary>
         /// 创建一个值属性
@@ -23,18 +23,18 @@ namespace MaxyToolKit.Data
         /// <param name="initialValue">
         /// 初始值
         /// </param>
-        public MProperty(T initialValue = default) => value = initialValue;
+        public MProperty(T initialValue = default) => _value = initialValue;
 
         /// <summary>
         /// 获取或设置当前值
         /// </summary>
         public T Value
         {
-            get => value;
+            get => _value;
             set
             {
-                if (EqualityComparer<T>.Default.Equals(this.value, value)) return;
-                this.value = value;
+                if (EqualityComparer<T>.Default.Equals(_value, value)) return;
+                _value = value;
                 Notify();
             }
         }
@@ -54,9 +54,9 @@ namespace MaxyToolKit.Data
         public IDisposable Subscribe(Action<T> listener, bool invokeImmediately = false)
         {
             if (listener == null) throw new ArgumentNullException(nameof(listener));
-            if (invokeImmediately) listener(value);
-            changed += listener;
-            return new MDisposable(() => changed -= listener);
+            if (invokeImmediately) listener(_value);
+            _changed += listener;
+            return new MDisposable(() => _changed -= listener);
         }
 
         /// <summary>
@@ -87,12 +87,12 @@ namespace MaxyToolKit.Data
         /// <param name="next">
         /// 新的值
         /// </param>
-        public void SetValueSilently(T next) => value = next;
+        public void SetValueSilently(T next) => _value = next;
 
         /// <summary>
         /// 开始批量更新并合并后续通知
         /// </summary>
-        public void BeginBatch() => batchDepth++;
+        public void BeginBatch() => _batchDepth++;
 
         /// <summary>
         /// 结束批量更新并按需发送一次通知
@@ -103,19 +103,19 @@ namespace MaxyToolKit.Data
         public void EndBatch(bool notify = true)
         {
             //嵌套批处理只在最外层结束时结算
-            if (batchDepth == 0) return;
-            batchDepth--;
-            if (batchDepth != 0) return;
+            if (_batchDepth == 0) return;
+            _batchDepth--;
+            if (_batchDepth != 0) return;
             //根据脏状态决定是否发送合并通知
-            var shouldNotify = dirty && notify;
-            dirty = false;
-            if (shouldNotify) changed?.Invoke(value);
+            var shouldNotify = _dirty && notify;
+            _dirty = false;
+            if (shouldNotify) _changed?.Invoke(_value);
         }
 
         /// <summary>
         /// 清除全部值变化订阅
         /// </summary>
-        public void Clear() => changed = null;
+        public void Clear() => _changed = null;
 
         /// <summary>
         /// 将当前值转换为字符串
@@ -123,7 +123,7 @@ namespace MaxyToolKit.Data
         /// <returns>
         /// 当前值的字符串表示
         /// </returns>
-        public override string ToString() => value?.ToString();
+        public override string ToString() => _value?.ToString();
 
         /// <summary>
         /// 根据批处理状态通知值变化订阅者
@@ -131,8 +131,8 @@ namespace MaxyToolKit.Data
         private void Notify()
         {
             //批量更新期间只记录脏状态
-            if (batchDepth > 0) { dirty = true; return; }
-            changed?.Invoke(value);
+            if (_batchDepth > 0) { _dirty = true; return; }
+            _changed?.Invoke(_value);
         }
 
         /// <summary>
@@ -155,15 +155,15 @@ namespace MaxyToolKit.Data
     /// </typeparam>
     public sealed class MListProperty<T> : IEnumerable<T>
     {
-        private readonly List<T> values;
-        private int batchDepth;
-        private bool dirty;
-        private event Action<IReadOnlyList<T>> changed;
+        private readonly List<T> _values;
+        private int _batchDepth;
+        private bool _dirty;
+        private event Action<IReadOnlyList<T>> _changed;
 
         /// <summary>
         /// 创建空列表属性
         /// </summary>
-        public MListProperty() => values = new List<T>();
+        public MListProperty() => _values = new List<T>();
 
         /// <summary>
         /// 使用初始集合创建列表属性
@@ -171,12 +171,12 @@ namespace MaxyToolKit.Data
         /// <param name="initial">
         /// 初始元素集合
         /// </param>
-        public MListProperty(IEnumerable<T> initial) => values = new List<T>(initial);
+        public MListProperty(IEnumerable<T> initial) => _values = new List<T>(initial);
 
         /// <summary>
         /// 获取当前元素数量
         /// </summary>
-        public int Count => values.Count;
+        public int Count => _values.Count;
 
         /// <summary>
         /// 访问指定索引的元素
@@ -189,8 +189,8 @@ namespace MaxyToolKit.Data
         /// </returns>
         public T this[int index]
         {
-            get => values[index];
-            set { values[index] = value; Notify(); }
+            get => _values[index];
+            set { _values[index] = value; Notify(); }
         }
 
         /// <summary>
@@ -208,9 +208,9 @@ namespace MaxyToolKit.Data
         public IDisposable Subscribe(Action<IReadOnlyList<T>> listener, bool invokeImmediately = false)
         {
             if (listener == null) throw new ArgumentNullException(nameof(listener));
-            if (invokeImmediately) listener(values);
-            changed += listener;
-            return new MDisposable(() => changed -= listener);
+            if (invokeImmediately) listener(_values);
+            _changed += listener;
+            return new MDisposable(() => _changed -= listener);
         }
 
         /// <summary>
@@ -238,7 +238,7 @@ namespace MaxyToolKit.Data
         /// <summary>
         /// 开始批量更新并合并后续通知
         /// </summary>
-        public void BeginBatch() => batchDepth++;
+        public void BeginBatch() => _batchDepth++;
 
         /// <summary>
         /// 结束批量更新并按需发送一次通知
@@ -249,13 +249,13 @@ namespace MaxyToolKit.Data
         public void EndBatch(bool notify = true)
         {
             //嵌套批处理只在最外层结束时结算
-            if (batchDepth == 0) return;
-            batchDepth--;
-            if (batchDepth != 0) return;
+            if (_batchDepth == 0) return;
+            _batchDepth--;
+            if (_batchDepth != 0) return;
             //根据脏状态决定是否发送合并通知
-            var shouldNotify = dirty && notify;
-            dirty = false;
-            if (shouldNotify) changed?.Invoke(values);
+            var shouldNotify = _dirty && notify;
+            _dirty = false;
+            if (shouldNotify) _changed?.Invoke(_values);
         }
 
         /// <summary>
@@ -264,7 +264,7 @@ namespace MaxyToolKit.Data
         /// <param name="item">
         /// 要添加的元素
         /// </param>
-        public void Add(T item) { values.Add(item); Notify(); }
+        public void Add(T item) { _values.Add(item); Notify(); }
 
         /// <summary>
         /// 静默替换全部元素
@@ -275,9 +275,9 @@ namespace MaxyToolKit.Data
         public void ReplaceSilently(IEnumerable<T> items)
         {
             //替换全部元素并保持静默状态
-            values.Clear();
-            values.AddRange(items);
-            dirty = false;
+            _values.Clear();
+            _values.AddRange(items);
+            _dirty = false;
         }
 
         /// <summary>
@@ -286,7 +286,7 @@ namespace MaxyToolKit.Data
         /// <param name="items">
         /// 要添加的元素集合
         /// </param>
-        public void AddRange(IEnumerable<T> items) { var before = values.Count; values.AddRange(items); if (values.Count != before) Notify(); }
+        public void AddRange(IEnumerable<T> items) { var before = _values.Count; _values.AddRange(items); if (_values.Count != before) Notify(); }
 
         /// <summary>
         /// 在指定位置插入元素
@@ -297,7 +297,7 @@ namespace MaxyToolKit.Data
         /// <param name="item">
         /// 要插入的元素
         /// </param>
-        public void Insert(int index, T item) { values.Insert(index, item); Notify(); }
+        public void Insert(int index, T item) { _values.Insert(index, item); Notify(); }
 
         /// <summary>
         /// 移除第一个匹配元素
@@ -308,7 +308,7 @@ namespace MaxyToolKit.Data
         /// <returns>
         /// 成功移除时返回true
         /// </returns>
-        public bool Remove(T item) { var result = values.Remove(item); if (result) Notify(); return result; }
+        public bool Remove(T item) { var result = _values.Remove(item); if (result) Notify(); return result; }
 
         /// <summary>
         /// 移除所有匹配条件的元素
@@ -319,7 +319,7 @@ namespace MaxyToolKit.Data
         /// <returns>
         /// 移除的元素数量
         /// </returns>
-        public int RemoveAll(Predicate<T> predicate) { var result = values.RemoveAll(predicate); if (result > 0) Notify(); return result; }
+        public int RemoveAll(Predicate<T> predicate) { var result = _values.RemoveAll(predicate); if (result > 0) Notify(); return result; }
 
         /// <summary>
         /// 移除指定位置的元素
@@ -327,12 +327,12 @@ namespace MaxyToolKit.Data
         /// <param name="index">
         /// 元素索引
         /// </param>
-        public void RemoveAt(int index) { values.RemoveAt(index); Notify(); }
+        public void RemoveAt(int index) { _values.RemoveAt(index); Notify(); }
 
         /// <summary>
         /// 清空全部元素
         /// </summary>
-        public void Clear() { if (values.Count == 0) return; values.Clear(); Notify(); }
+        public void Clear() { if (_values.Count == 0) return; _values.Clear(); Notify(); }
 
         /// <summary>
         /// 判断列表是否包含指定元素
@@ -343,7 +343,7 @@ namespace MaxyToolKit.Data
         /// <returns>
         /// 包含时返回true
         /// </returns>
-        public bool Contains(T item) => values.Contains(item);
+        public bool Contains(T item) => _values.Contains(item);
 
         /// <summary>
         /// 查找元素所在索引
@@ -354,7 +354,7 @@ namespace MaxyToolKit.Data
         /// <returns>
         /// 元素索引，未找到时返回负一
         /// </returns>
-        public int IndexOf(T item) => values.IndexOf(item);
+        public int IndexOf(T item) => _values.IndexOf(item);
 
         /// <summary>
         /// 查找第一个满足条件的元素
@@ -365,7 +365,7 @@ namespace MaxyToolKit.Data
         /// <returns>
         /// 匹配元素，未找到时返回默认值
         /// </returns>
-        public T Find(Predicate<T> predicate) => values.Find(predicate);
+        public T Find(Predicate<T> predicate) => _values.Find(predicate);
 
         /// <summary>
         /// 查找全部满足条件的元素
@@ -376,7 +376,7 @@ namespace MaxyToolKit.Data
         /// <returns>
         /// 匹配元素列表
         /// </returns>
-        public List<T> FindAll(Predicate<T> predicate) => values.FindAll(predicate);
+        public List<T> FindAll(Predicate<T> predicate) => _values.FindAll(predicate);
 
         /// <summary>
         /// 创建当前列表的副本
@@ -384,7 +384,7 @@ namespace MaxyToolKit.Data
         /// <returns>
         /// 新的元素列表
         /// </returns>
-        public List<T> ToList() => new List<T>(values);
+        public List<T> ToList() => new List<T>(_values);
 
         /// <summary>
         /// 获取列表枚举器
@@ -392,7 +392,7 @@ namespace MaxyToolKit.Data
         /// <returns>
         /// 列表枚举器
         /// </returns>
-        public List<T>.Enumerator GetEnumerator() => values.GetEnumerator();
+        public List<T>.Enumerator GetEnumerator() => _values.GetEnumerator();
 
         /// <summary>
         /// 获取泛型枚举器
@@ -400,7 +400,7 @@ namespace MaxyToolKit.Data
         /// <returns>
         /// 泛型枚举器
         /// </returns>
-        IEnumerator<T> IEnumerable<T>.GetEnumerator() => values.GetEnumerator();
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() => _values.GetEnumerator();
 
         /// <summary>
         /// 获取非泛型枚举器
@@ -408,7 +408,7 @@ namespace MaxyToolKit.Data
         /// <returns>
         /// 非泛型枚举器
         /// </returns>
-        IEnumerator IEnumerable.GetEnumerator() => values.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => _values.GetEnumerator();
 
         /// <summary>
         /// 根据批处理状态通知列表变化订阅者
@@ -416,8 +416,8 @@ namespace MaxyToolKit.Data
         private void Notify()
         {
             //批量更新期间只记录脏状态
-            if (batchDepth > 0) { dirty = true; return; }
-            changed?.Invoke(values);
+            if (_batchDepth > 0) { _dirty = true; return; }
+            _changed?.Invoke(_values);
         }
     }
 
@@ -432,15 +432,15 @@ namespace MaxyToolKit.Data
     /// </typeparam>
     public sealed class MDictionaryProperty<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
     {
-        private readonly Dictionary<TKey, TValue> values;
-        private int batchDepth;
-        private bool dirty;
-        private event Action<IReadOnlyDictionary<TKey, TValue>> changed;
+        private readonly Dictionary<TKey, TValue> _values;
+        private int _batchDepth;
+        private bool _dirty;
+        private event Action<IReadOnlyDictionary<TKey, TValue>> _changed;
 
         /// <summary>
         /// 创建空字典属性
         /// </summary>
-        public MDictionaryProperty() => values = new Dictionary<TKey, TValue>();
+        public MDictionaryProperty() => _values = new Dictionary<TKey, TValue>();
 
         /// <summary>
         /// 使用指定比较器创建字典属性
@@ -448,22 +448,22 @@ namespace MaxyToolKit.Data
         /// <param name="comparer">
         /// 键比较器
         /// </param>
-        public MDictionaryProperty(IEqualityComparer<TKey> comparer) => values = new Dictionary<TKey, TValue>(comparer);
+        public MDictionaryProperty(IEqualityComparer<TKey> comparer) => _values = new Dictionary<TKey, TValue>(comparer);
 
         /// <summary>
         /// 获取当前键值对数量
         /// </summary>
-        public int Count => values.Count;
+        public int Count => _values.Count;
 
         /// <summary>
         /// 获取全部键
         /// </summary>
-        public Dictionary<TKey, TValue>.KeyCollection Keys => values.Keys;
+        public Dictionary<TKey, TValue>.KeyCollection Keys => _values.Keys;
 
         /// <summary>
         /// 获取全部值
         /// </summary>
-        public Dictionary<TKey, TValue>.ValueCollection Values => values.Values;
+        public Dictionary<TKey, TValue>.ValueCollection Values => _values.Values;
 
         /// <summary>
         /// 访问指定键对应的值
@@ -476,8 +476,8 @@ namespace MaxyToolKit.Data
         /// </returns>
         public TValue this[TKey key]
         {
-            get => values[key];
-            set { values[key] = value; Notify(); }
+            get => _values[key];
+            set { _values[key] = value; Notify(); }
         }
 
         /// <summary>
@@ -495,9 +495,9 @@ namespace MaxyToolKit.Data
         public IDisposable Subscribe(Action<IReadOnlyDictionary<TKey, TValue>> listener, bool invokeImmediately = false)
         {
             if (listener == null) throw new ArgumentNullException(nameof(listener));
-            if (invokeImmediately) listener(values);
-            changed += listener;
-            return new MDisposable(() => changed -= listener);
+            if (invokeImmediately) listener(_values);
+            _changed += listener;
+            return new MDisposable(() => _changed -= listener);
         }
 
         /// <summary>
@@ -525,7 +525,7 @@ namespace MaxyToolKit.Data
         /// <summary>
         /// 开始批量更新并合并后续通知
         /// </summary>
-        public void BeginBatch() => batchDepth++;
+        public void BeginBatch() => _batchDepth++;
 
         /// <summary>
         /// 结束批量更新并按需发送一次通知
@@ -536,13 +536,13 @@ namespace MaxyToolKit.Data
         public void EndBatch(bool notify = true)
         {
             //嵌套批处理只在最外层结束时结算
-            if (batchDepth == 0) return;
-            batchDepth--;
-            if (batchDepth != 0) return;
+            if (_batchDepth == 0) return;
+            _batchDepth--;
+            if (_batchDepth != 0) return;
             //根据脏状态决定是否发送合并通知
-            var shouldNotify = dirty && notify;
-            dirty = false;
-            if (shouldNotify) changed?.Invoke(values);
+            var shouldNotify = _dirty && notify;
+            _dirty = false;
+            if (shouldNotify) _changed?.Invoke(_values);
         }
 
         /// <summary>
@@ -554,7 +554,7 @@ namespace MaxyToolKit.Data
         /// <param name="value">
         /// 字典值
         /// </param>
-        public void Add(TKey key, TValue value) { values.Add(key, value); Notify(); }
+        public void Add(TKey key, TValue value) { _values.Add(key, value); Notify(); }
 
         /// <summary>
         /// 静默替换全部键值对
@@ -565,9 +565,9 @@ namespace MaxyToolKit.Data
         public void ReplaceSilently(IEnumerable<KeyValuePair<TKey, TValue>> items)
         {
             //先清除旧数据，再写入新键值对
-            values.Clear();
-            foreach (var item in items) values[item.Key] = item.Value;
-            dirty = false;
+            _values.Clear();
+            foreach (var item in items) _values[item.Key] = item.Value;
+            _dirty = false;
         }
 
         /// <summary>
@@ -579,12 +579,12 @@ namespace MaxyToolKit.Data
         /// <returns>
         /// 成功移除时返回true
         /// </returns>
-        public bool Remove(TKey key) { var result = values.Remove(key); if (result) Notify(); return result; }
+        public bool Remove(TKey key) { var result = _values.Remove(key); if (result) Notify(); return result; }
 
         /// <summary>
         /// 清空全部键值对
         /// </summary>
-        public void Clear() { if (values.Count == 0) return; values.Clear(); Notify(); }
+        public void Clear() { if (_values.Count == 0) return; _values.Clear(); Notify(); }
 
         /// <summary>
         /// 判断字典是否包含指定键
@@ -595,7 +595,7 @@ namespace MaxyToolKit.Data
         /// <returns>
         /// 包含时返回true
         /// </returns>
-        public bool ContainsKey(TKey key) => values.ContainsKey(key);
+        public bool ContainsKey(TKey key) => _values.ContainsKey(key);
 
         /// <summary>
         /// 尝试获取指定键对应的值
@@ -609,7 +609,7 @@ namespace MaxyToolKit.Data
         /// <returns>
         /// 找到键时返回true
         /// </returns>
-        public bool TryGetValue(TKey key, out TValue value) => values.TryGetValue(key, out value);
+        public bool TryGetValue(TKey key, out TValue value) => _values.TryGetValue(key, out value);
 
         /// <summary>
         /// 获取字典枚举器
@@ -617,7 +617,7 @@ namespace MaxyToolKit.Data
         /// <returns>
         /// 字典枚举器
         /// </returns>
-        public Dictionary<TKey, TValue>.Enumerator GetEnumerator() => values.GetEnumerator();
+        public Dictionary<TKey, TValue>.Enumerator GetEnumerator() => _values.GetEnumerator();
 
         /// <summary>
         /// 获取泛型枚举器
@@ -625,7 +625,7 @@ namespace MaxyToolKit.Data
         /// <returns>
         /// 泛型枚举器
         /// </returns>
-        IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator() => values.GetEnumerator();
+        IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator() => _values.GetEnumerator();
 
         /// <summary>
         /// 获取非泛型枚举器
@@ -633,7 +633,7 @@ namespace MaxyToolKit.Data
         /// <returns>
         /// 非泛型枚举器
         /// </returns>
-        IEnumerator IEnumerable.GetEnumerator() => values.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => _values.GetEnumerator();
 
         /// <summary>
         /// 根据批处理状态通知字典变化订阅者
@@ -641,8 +641,8 @@ namespace MaxyToolKit.Data
         private void Notify()
         {
             //批量更新期间只记录脏状态
-            if (batchDepth > 0) { dirty = true; return; }
-            changed?.Invoke(values);
+            if (_batchDepth > 0) { _dirty = true; return; }
+            _changed?.Invoke(_values);
         }
     }
 
@@ -651,7 +651,7 @@ namespace MaxyToolKit.Data
     /// </summary>
     internal sealed class MDisposable : IDisposable
     {
-        private Action dispose;
+        private Action _dispose;
 
         /// <summary>
         /// 创建可释放订阅对象
@@ -659,11 +659,11 @@ namespace MaxyToolKit.Data
         /// <param name="disposeAction">
         /// 释放时执行的回调
         /// </param>
-        public MDisposable(Action disposeAction) => dispose = disposeAction;
+        public MDisposable(Action disposeAction) => _dispose = disposeAction;
 
         /// <summary>
         /// 执行释放回调并清空引用
         /// </summary>
-        public void Dispose() { dispose?.Invoke(); dispose = null; }
+        public void Dispose() { _dispose?.Invoke(); _dispose = null; }
     }
 }

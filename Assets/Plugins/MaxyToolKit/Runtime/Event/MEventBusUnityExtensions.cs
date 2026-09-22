@@ -9,7 +9,7 @@ namespace MaxyToolKit.Event
     /// </summary>
     public sealed class MSubscriptionScope : MonoBehaviour
     {
-        private readonly List<IDisposable> subscriptions = new List<IDisposable>();
+        private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
 
         /// <summary>
         /// 添加需要在对象销毁时释放的订阅
@@ -17,7 +17,7 @@ namespace MaxyToolKit.Event
         /// <param name="subscription">
         /// 要托管的订阅对象
         /// </param>
-        public void Add(IDisposable subscription) { if (subscription != null) subscriptions.Add(subscription); }
+        public void Add(IDisposable subscription) { if (subscription != null) _subscriptions.Add(subscription); }
 
         /// <summary>
         /// 销毁对象时释放全部托管订阅
@@ -25,8 +25,8 @@ namespace MaxyToolKit.Event
         private void OnDestroy()
         {
             //倒序释放并清空列表
-            foreach (var subscription in subscriptions) subscription.Dispose();
-            subscriptions.Clear();
+            foreach (var subscription in _subscriptions) subscription.Dispose();
+            _subscriptions.Clear();
         }
     }
 

@@ -78,6 +78,8 @@ public sealed class SaveSystem : ISystem
 ## 重要约定
 
 - `MEventBus`是同步事件总线，默认在主线程使用
+- 私有字段和私有事件使用下划线前缀，例如`_handlers`和`_subscriptions`
+- 私有方法保持PascalCase，便于与Unity生命周期方法和公开方法保持一致
 - 订阅方法返回`IDisposable`，对象销毁时建议调用`DisposeWith(gameObject)`
 - 列表和字典属性的回调参数是只读接口，不要在回调中直接修改集合
 - `MSystemCenter.Reset()`会逆序关闭系统，同时清空全局事件

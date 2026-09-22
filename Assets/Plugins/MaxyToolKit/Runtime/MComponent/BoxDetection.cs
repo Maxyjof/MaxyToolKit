@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace MaxyToolKit.MComponent
 {
@@ -7,11 +8,15 @@ namespace MaxyToolKit.MComponent
     /// </summary>
     public sealed class BoxDetection : MonoBehaviour
     {
-        [SerializeField] private Vector3 halfExtents = Vector3.one * 0.5f;
-        [SerializeField] private LayerMask layerMask = ~0;
-        [SerializeField] private QueryTriggerInteraction triggers = QueryTriggerInteraction.Ignore;
-        [SerializeField] private int bufferSize = 32;
-        private Collider[] buffer;
+        [FormerlySerializedAs("halfExtents")]
+        [SerializeField] private Vector3 _halfExtents = Vector3.one * 0.5f;
+        [FormerlySerializedAs("layerMask")]
+        [SerializeField] private LayerMask _layerMask = ~0;
+        [FormerlySerializedAs("triggers")]
+        [SerializeField] private QueryTriggerInteraction _triggers = QueryTriggerInteraction.Ignore;
+        [FormerlySerializedAs("bufferSize")]
+        [SerializeField] private int _bufferSize = 32;
+        private Collider[] _buffer;
 
         /// <summary>
         /// 将检测结果写入调用方提供的数组
@@ -24,7 +29,7 @@ namespace MaxyToolKit.MComponent
         /// </returns>
         public int Detect(Collider[] results)
         {
-            return Physics.OverlapBoxNonAlloc(transform.position, halfExtents, results, transform.rotation, layerMask, triggers);
+            return Physics.OverlapBoxNonAlloc(transform.position, _halfExtents, results, transform.rotation, _layerMask, _triggers);
         }
 
         /// <summary>
@@ -36,8 +41,8 @@ namespace MaxyToolKit.MComponent
         public int Detect()
         {
             //根据配置准备可复用的结果缓冲区
-            if (buffer == null || buffer.Length != Mathf.Max(1, bufferSize)) buffer = new Collider[Mathf.Max(1, bufferSize)];
-            return Detect(buffer);
+            if (_buffer == null || _buffer.Length != Mathf.Max(1, _bufferSize)) _buffer = new Collider[Mathf.Max(1, _bufferSize)];
+            return Detect(_buffer);
         }
 
         /// <summary>
@@ -49,7 +54,7 @@ namespace MaxyToolKit.MComponent
             Gizmos.color = Color.cyan;
             var matrix = Gizmos.matrix;
             Gizmos.matrix = Matrix4x4.TRS(transform.position, transform.rotation, Vector3.one);
-            Gizmos.DrawWireCube(Vector3.zero, halfExtents * 2f);
+            Gizmos.DrawWireCube(Vector3.zero, _halfExtents * 2f);
             //恢复绘制前的全局矩阵
             Gizmos.matrix = matrix;
         }

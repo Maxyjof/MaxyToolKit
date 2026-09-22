@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace MaxyToolKit.MComponent
 {
@@ -14,7 +15,8 @@ namespace MaxyToolKit.MComponent
         /// 获取当前类型的单例实例
         /// </summary>
         public static T Instance { get; private set; }
-        [SerializeField] private bool dontDestroyOnLoad;
+        [FormerlySerializedAs("dontDestroyOnLoad")]
+        [SerializeField] private bool _dontDestroyOnLoad;
 
         /// <summary>
         /// 初始化单例并按配置决定是否跨场景保留
@@ -30,7 +32,7 @@ namespace MaxyToolKit.MComponent
 
             //记录当前实例并应用跨场景设置
             Instance = (T)this;
-            if (dontDestroyOnLoad) DontDestroyOnLoad(gameObject);
+            if (_dontDestroyOnLoad) DontDestroyOnLoad(gameObject);
         }
 
         /// <summary>

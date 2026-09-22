@@ -9,7 +9,7 @@ namespace MaxyToolKit.Event
     /// </summary>
     public sealed class MEventBus
     {
-        private readonly Dictionary<Type, List<Delegate>> handlers = new Dictionary<Type, List<Delegate>>();
+        private readonly Dictionary<Type, List<Delegate>> _handlers = new Dictionary<Type, List<Delegate>>();
         /// <summary>
         /// 全局共享事件总线实例
         /// </summary>
@@ -37,10 +37,10 @@ namespace MaxyToolKit.Event
             if (handler == null) throw new ArgumentNullException(nameof(handler));
             //按消息类型获取或创建处理器列表
             var type = typeof(T);
-            if (!handlers.TryGetValue(type, out var list))
+            if (!_handlers.TryGetValue(type, out var list))
             {
                 list = new List<Delegate>();
-                handlers.Add(type, list);
+                _handlers.Add(type, list);
             }
 
             //记录处理器并返回自动取消对象
@@ -59,10 +59,10 @@ namespace MaxyToolKit.Event
         /// </param>
         public void Unsubscribe<T>(Action<T> handler)
         {
-            if (handlers.TryGetValue(typeof(T), out var list))
+            if (_handlers.TryGetValue(typeof(T), out var list))
             {
                 list.Remove(handler);
-                if (list.Count == 0) handlers.Remove(typeof(T));
+                if (list.Count == 0) _handlers.Remove(typeof(T));
             }
         }
 
@@ -77,7 +77,7 @@ namespace MaxyToolKit.Event
         /// </param>
         public void Publish<T>(T message)
         {
-            if (!handlers.TryGetValue(typeof(T), out var list)) return;
+            if (!_handlers.TryGetValue(typeof(T), out var list)) return;
             //复制列表以允许回调中安全修改订阅
             var snapshot = list.ToArray();
             foreach (var callback in snapshot)
@@ -101,34 +101,34 @@ namespace MaxyToolKit.Event
         /// <typeparam name="T">
         /// 消息类型
         /// </typeparam>
-        public void Clear<T>() => handlers.Remove(typeof(T));
+        public void Clear<T>() => _handlers.Remove(typeof(T));
 
         /// <summary>
         /// 清除全部消息订阅
         /// </summary>
-        public void Clear() => handlers.Clear();
+        public void Clear() => _handlers.Clear();
 
         /// <summary>
         /// 封装一次订阅的取消逻辑
         /// </summary>
         private sealed class Subscription : IDisposable
         {
-            private Action dispose;
+            private Action _dispose;
             /// <summary>
             /// 创建订阅释放对象
             /// </summary>
             /// <param name="disposeAction">
             /// 释放时执行的取消订阅回调
             /// </param>
-            public Subscription(Action disposeAction) => dispose = disposeAction;
+            public Subscription(Action disposeAction) => _dispose = disposeAction;
 
             /// <summary>
             /// 取消订阅并清空释放回调
             /// </summary>
             public void Dispose()
             {
-                dispose?.Invoke();
-                dispose = null;
+                _dispose?.Invoke();
+                _dispose = null;
             }
         }
     }

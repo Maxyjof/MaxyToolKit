@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace MaxyToolKit.MComponent
 {
@@ -10,21 +11,25 @@ namespace MaxyToolKit.MComponent
     [RequireComponent(typeof(CanvasGroup))]
     public sealed class FadeEffectOverlay : MonoBehaviour
     {
-        [SerializeField] private CanvasGroup canvasGroup;
-        [SerializeField] private AnimationCurve curve = null;
-        [SerializeField] private bool useUnscaledTime;
-        [SerializeField] private bool blockRaycastsWhenVisible = true;
-        private Coroutine running;
+        [FormerlySerializedAs("canvasGroup")]
+        [SerializeField] private CanvasGroup _canvasGroup;
+        [FormerlySerializedAs("curve")]
+        [SerializeField] private AnimationCurve _curve = null;
+        [FormerlySerializedAs("useUnscaledTime")]
+        [SerializeField] private bool _useUnscaledTime;
+        [FormerlySerializedAs("blockRaycastsWhenVisible")]
+        [SerializeField] private bool _blockRaycastsWhenVisible = true;
+        private Coroutine _running;
 
         /// <summary>
         /// 获取用于控制透明度和交互状态的CanvasGroup
         /// </summary>
-        public CanvasGroup CanvasGroup => canvasGroup;
+        public CanvasGroup CanvasGroup => _canvasGroup;
 
         /// <summary>
         /// 在组件重置时自动获取CanvasGroup
         /// </summary>
-        private void Reset() => canvasGroup = GetComponent<CanvasGroup>();
+        private void Reset() => _canvasGroup = GetComponent<CanvasGroup>();
 
         /// <summary>
         /// 初始化CanvasGroup和默认曲线
@@ -32,8 +37,8 @@ namespace MaxyToolKit.MComponent
         private void Awake()
         {
             //补齐可能未在检查器中设置的依赖
-            if (canvasGroup == null) canvasGroup = GetComponent<CanvasGroup>();
-            if (curve == null || curve.length == 0) curve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
+            if (_canvasGroup == null) _canvasGroup = GetComponent<CanvasGroup>();
+            if (_curve == null || _curve.length == 0) _curve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
         }
 
         /// <summary>
@@ -76,8 +81,8 @@ namespace MaxyToolKit.MComponent
         public void FadeTo(float target, float duration, Action completed = null)
         {
             //停止旧动画并启动新的协程
-            if (running != null) StopCoroutine(running);
-            running = StartCoroutine(FadeRoutine(Mathf.Clamp01(target), Mathf.Max(0f, duration), completed));
+            if (_running != null) StopCoroutine(_running);
+            _running = StartCoroutine(FadeRoutine(Mathf.Clamp01(target), Mathf.Max(0f, duration), completed));
         }
 
         /// <summary>
@@ -89,8 +94,8 @@ namespace MaxyToolKit.MComponent
         public void SetImmediate(float alpha)
         {
             //立即终止旧动画并同步交互状态
-            if (running != null) StopCoroutine(running);
-            running = null;
+            if (_running != null) StopCoroutine(_running);
+            _running = null;
             SetAlpha(alpha);
         }
 
@@ -111,13 +116,13 @@ namespace MaxyToolKit.MComponent
         /// </returns>
         private IEnumerator FadeRoutine(float target, float duration, Action completed)
         {
-            var start = canvasGroup.alpha;
+            var start = _canvasGroup.alpha;
             if (duration <= 0f)
             {
                 //零时长直接设置结果
                 SetAlpha(target);
                 completed?.Invoke();
-                running = null;
+                _running = null;
                 yield break;
             }
 
@@ -125,8 +130,8 @@ namespace MaxyToolKit.MComponent
             var elapsed = 0f;
             while (elapsed < duration)
             {
-                elapsed += useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
-                var t = curve.Evaluate(Mathf.Clamp01(elapsed / duration));
+                elapsed += _useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
+                var t = _curve.Evaluate(Mathf.Clamp01(elapsed / duration));
                 SetAlpha(Mathf.LerpUnclamped(start, target, t));
                 yield return null;
             }
@@ -134,7 +139,7 @@ namespace MaxyToolKit.MComponent
             //确保最终值不受浮点误差影响
             SetAlpha(target);
             completed?.Invoke();
-            running = null;
+            _running = null;
         }
 
         /// <summary>
@@ -145,9 +150,9 @@ namespace MaxyToolKit.MComponent
         /// </param>
         private void SetAlpha(float alpha)
         {
-            canvasGroup.alpha = alpha;
-            canvasGroup.blocksRaycasts = blockRaycastsWhenVisible && alpha > 0.001f;
-            canvasGroup.interactable = canvasGroup.blocksRaycasts;
+            _canvasGroup.alpha = alpha;
+            _canvasGroup.blocksRaycasts = _blockRaycastsWhenVisible && alpha > 0.001f;
+            _canvasGroup.interactable = _canvasGroup.blocksRaycasts;
         }
     }
 }

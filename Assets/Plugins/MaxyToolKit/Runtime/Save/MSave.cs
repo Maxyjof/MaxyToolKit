@@ -7,7 +7,7 @@ namespace MaxyToolKit.Save
     /// </summary>
     public static class MSave
     {
-        private const string DefaultFileName = "SaveFile.es3";
+        private const string _defaultFileName = "SaveFile.es3";
 
         /// <summary>
         /// 创建MaxyToolKit默认文件存储设置
@@ -18,7 +18,7 @@ namespace MaxyToolKit.Save
         private static ES3Settings CreateFileSettings()
         {
             //明确指定文件位置，避免项目默认设置改为PlayerPrefs后影响框架存档
-            return new ES3Settings(DefaultFileName, ES3.Location.File, ES3.Directory.PersistentDataPath);
+            return new ES3Settings(_defaultFileName, ES3.Location.File, ES3.Directory.PersistentDataPath);
         }
 
         /// <summary>
