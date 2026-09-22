@@ -17,7 +17,7 @@ namespace MaxyMCP.Editor.MCP
     {
         private const string PendingKey = "MaxyMCP_PendingExecution";
         private const string ResultKey = "MaxyMCP_ExecutionResult";
-        private const string TempDirectory = "Assets/unity-mcp/Editor/Temp";
+        private const string TempDirectory = "Assets/Plugins/MaxyMCP/Editor/Temp";
 
         private static StringBuilder _compilationErrors;
 

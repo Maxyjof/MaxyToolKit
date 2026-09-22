@@ -520,7 +520,7 @@ namespace MaxyMCP.Editor.MCP.Server
 
             var candidates = new[]
             {
-                Path.Combine(Application.dataPath, "Plugins", "unity-mcp", "Editor", "MCP", "Server", "Broker", "keepalive-broker.cs.txt"),
+                Path.Combine(Application.dataPath, "Plugins", "MaxyMCP", "Editor", "MCP", "Server", "Broker", "keepalive-broker.cs.txt"),
                 Path.Combine(projectRoot, "Packages", "com.maxy.maxymcp", "Editor", "MCP", "Server", "Broker", "keepalive-broker.cs.txt"),
                 // 兼容仍以旧包名安装的项目。
                 Path.Combine(projectRoot, "Packages", "com.gamebooom.unity.mcp", "Editor", "MCP", "Server", "Broker", "keepalive-broker.cs.txt")

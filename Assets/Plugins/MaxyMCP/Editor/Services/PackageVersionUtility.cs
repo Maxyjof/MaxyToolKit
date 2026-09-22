@@ -10,7 +10,7 @@ namespace MaxyMCP.Editor.Services
     internal static class PackageVersionUtility
     {
         private const string PackageName = "com.maxy.maxymcp";
-        private const string AssetInstallRoot = "Assets/Plugins/unity-mcp";
+        private const string AssetInstallRoot = "Assets/Plugins/MaxyMCP";
         private const string PackageInstallRoot = "Packages/com.maxy.maxymcp";
         private static string _cachedVersion;
 

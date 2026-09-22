@@ -99,7 +99,7 @@ namespace MaxyMCP.Editor.MCP.Server
             ["Regenerate MaxyMCP-managed project skills with the versions bundled in this package."] = "使用此插件内置的版本重新生成 MaxyMCP 管理的项目技能。",
             ["Installed MaxyMCP-managed project skills are already up to date for the selected platform."] = "当前选定平台的 MaxyMCP 项目技能已经是最新版本。",
             ["Required"] = "必需",
-            ["Unity MCP Workflow"] = "Unity MCP 工作流",
+            ["Unity MCP Workflow"] = "MaxyMCP 工作流",
             ["Efficient workflow for using Unity MCP to edit, import, compile, inspect, and test Unity projects, including screenshot and Game View recording verification."] = "用于编辑、导入、编译、检查和测试 Unity 项目的高效 MCP 工作流，包括截图和游戏视图录制验证。",
             ["Unity UI Composition"] = "Unity 界面组合",
             ["Build and revise responsive Unity uGUI mobile interfaces, including portrait and landscape layouts, safe areas, prefabs, auto layout, scrolling, text, input, animation, and performance validation."] = "构建和修改响应式 Unity uGUI 移动界面，包括竖屏与横屏布局、安全区域、预制体、自动布局、滚动、文本、输入、动画和性能验证。",

@@ -49,7 +49,7 @@ wrapper packing, and opt-in publishing flags for GitHub, NuGet, and the MCP Regi
 - [ ] Repository description/topics are set on GitHub
 - [ ] Initial tags or release tags follow the chosen versioning scheme
 - [ ] The `.unitypackage` was exported from an explicit filtered asset list, without `IncludeDependencies` or `IncludeLibraryAssets`
-- [ ] The `.unitypackage` contains only `Assets/unity-mcp` paths; verify there are no `ProjectSettings/`, `Packages/`, `Library/`, `Tests/`, `CLAUDE.md`, or local token entries before upload
+- [ ] The `.unitypackage` contains only `Assets/Plugins/MaxyMCP` paths; verify there are no `ProjectSettings/`, `Packages/`, `Library/`, `Tests/`, `CLAUDE.md`, or local token entries before upload
 
 ## 6. Publish
 

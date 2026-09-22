@@ -8,7 +8,10 @@ ARTIFACT_ROOT="${RELEASE_ARTIFACT_DIR:-$PROJECT_ROOT/release-artifacts}"
 WRAPPER_ROOT="${MCP_WRAPPER_ROOT:-}"
 VALIDATION_TMP=""
 
-if [[ -z "$WRAPPER_ROOT" && -d "$PROJECT_ROOT/mcp-release/funseaai-unity-mcp" ]]; then
+if [[ -z "$WRAPPER_ROOT" && -d "$PROJECT_ROOT/mcp-release/MaxyMCP" ]]; then
+  WRAPPER_ROOT="$PROJECT_ROOT/mcp-release/MaxyMCP"
+elif [[ -z "$WRAPPER_ROOT" && -d "$PROJECT_ROOT/mcp-release/funseaai-unity-mcp" ]]; then
+  # 兼容仍使用旧目录名的外部封装工程
   WRAPPER_ROOT="$PROJECT_ROOT/mcp-release/funseaai-unity-mcp"
 fi
 
@@ -21,8 +24,8 @@ Local release helper for MaxyMCP Unity MCP.
 Default behavior:
   - bump package.json and local wrapper versions when the wrapper workspace exists
   - run Unity EditMode tests
-  - export Assets/unity-mcp as a filtered unitypackage without local-only files or tests
-  - validate all unitypackage pathnames stay under Assets/unity-mcp
+  - export Assets/Plugins/MaxyMCP as a filtered unitypackage without local-only files or tests
+  - validate all unitypackage pathnames stay under Assets/Plugins/MaxyMCP
   - generate release notes, SHA256SUMS, and a release manifest
   - dotnet pack the stdio wrapper when the wrapper workspace exists
   - archive local artifacts under release-artifacts/<version>
@@ -296,7 +299,7 @@ public static class ExportMaxyMCPUnityPackage
 {
     public static void Export()
     {
-        const string assetPath = "Assets/unity-mcp";
+        const string assetPath = "Assets/Plugins/MaxyMCP";
         const string outputPath = "$escaped_output";
 
         if (!AssetDatabase.IsValidFolder(assetPath))
@@ -329,8 +332,8 @@ public static class ExportMaxyMCPUnityPackage
             return false;
 
         var normalized = path.Replace('\\\\', '/').TrimEnd('/');
-        if (normalized != "Assets/unity-mcp" &&
-            !normalized.StartsWith("Assets/unity-mcp/", StringComparison.OrdinalIgnoreCase))
+        if (normalized != "Assets/Plugins/MaxyMCP" &&
+            !normalized.StartsWith("Assets/Plugins/MaxyMCP/", StringComparison.OrdinalIgnoreCase))
             return false;
 
         var fileName = Path.GetFileName(normalized);
@@ -391,8 +394,8 @@ validate_unitypackage() {
     | sort > "$OUT_DIR/unitypackage-pathnames.txt"
 
   local bad_paths
-  bad_paths="$(awk '$0 !~ /^Assets\/unity-mcp(\/|$)/ {print}' "$OUT_DIR/unitypackage-pathnames.txt" || true)"
-  [[ -z "$bad_paths" ]] || fail "unitypackage contains paths outside Assets/unity-mcp:\n$bad_paths"
+  bad_paths="$(awk '$0 !~ /^Assets\/Plugins\/MaxyMCP(\/|$)/ {print}' "$OUT_DIR/unitypackage-pathnames.txt" || true)"
+  [[ -z "$bad_paths" ]] || fail "unitypackage contains paths outside Assets/Plugins/MaxyMCP:\n$bad_paths"
 
   local blocked_paths
   blocked_paths="$(rg '(^|/)(ProjectSettings|Packages|Library|Tests|\.git|\.idea|\.claude|\.codex|\.github)(/|$)|(^|/)(CLAUDE\.md|\.DS_Store)(\.meta)?$|(^|/)\.mcpregistry_' "$OUT_DIR/unitypackage-pathnames.txt" || true)"
