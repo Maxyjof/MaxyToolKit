@@ -6,6 +6,7 @@ using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using MaxyToolKit;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace MaxyToolKit.Examples
@@ -472,6 +473,12 @@ namespace MaxyToolKit.Examples
         /// <returns>创建的内容容器</returns>
         public static RectTransform CreateCanvas(Transform parent)
         {
+            //示例场景需要事件系统才能接收真实鼠标和键盘输入
+            if (EventSystem.current == null)
+            {
+                var eventSystemObject = new GameObject("示例事件系统", typeof(EventSystem), typeof(StandaloneInputModule));
+                eventSystemObject.transform.SetParent(parent, false);
+            }
             var canvasObject = new GameObject("示例画布", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             canvasObject.transform.SetParent(parent, false);
             var canvas = canvasObject.GetComponent<Canvas>();
