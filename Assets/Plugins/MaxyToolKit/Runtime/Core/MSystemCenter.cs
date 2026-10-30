@@ -45,7 +45,22 @@ namespace MaxyToolKit.Core
             //记录系统并按注册顺序保存
             _systems.Add(type, system);
             _order.Add(system);
-            if (system is ISystem lifecycle) lifecycle.Initialize();
+            if (!(system is ISystem lifecycle)) return system;
+
+            //初始化失败时回滚注册并尝试关闭半初始化的系统，避免系统中心留下脏实例
+            try
+            {
+                lifecycle.Initialize();
+            }
+            catch
+            {
+                _systems.Remove(type);
+                _order.Remove(system);
+                try { lifecycle.Shutdown(); }
+                catch (Exception exception) { Debug.LogException(exception); }
+                throw;
+            }
+
             return system;
         }
 
@@ -110,10 +125,18 @@ namespace MaxyToolKit.Core
         public static bool Remove<T>() where T : class
         {
             if (!_systems.TryGetValue(typeof(T), out var system)) return false;
-            //先关闭系统再移除注册记录
-            if (system is ISystem lifecycle) lifecycle.Shutdown();
-            _systems.Remove(typeof(T));
-            _order.Remove(system);
+
+            //关闭逻辑即使抛错也要清掉注册记录，避免系统中心留下幽灵系统
+            try
+            {
+                if (system is ISystem lifecycle) lifecycle.Shutdown();
+            }
+            finally
+            {
+                _systems.Remove(typeof(T));
+                _order.Remove(system);
+            }
+
             return true;
         }
 
